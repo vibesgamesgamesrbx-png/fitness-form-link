@@ -176,11 +176,19 @@ function Index() {
       "Confira suas informações e clique em enviar no WhatsApp. 💗",
     ].join("\n");
 
-    window.open(
-      `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    const encodedMessage = encodeURIComponent(message);
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const whatsappUrl = isMobile
+      ? `whatsapp://send?phone=${TRAINER_WHATSAPP}&text=${encodedMessage}`
+      : `https://web.whatsapp.com/send?phone=${TRAINER_WHATSAPP}&text=${encodedMessage}`;
+
+    const whatsappLink = document.createElement("a");
+    whatsappLink.href = whatsappUrl;
+    whatsappLink.target = "_blank";
+    whatsappLink.rel = "noopener noreferrer";
+    document.body.appendChild(whatsappLink);
+    whatsappLink.click();
+    whatsappLink.remove();
   };
 
   return (
