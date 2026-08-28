@@ -141,6 +141,18 @@ function Index() {
       return;
     }
 
+    // Abre a janela do WhatsApp imediatamente (no gesto do clique) para que
+    // o navegador não bloqueie o redirecionamento que acontece depois da
+    // geração da imagem. Se o compartilhamento nativo funcionar, fechamos ela.
+    const janelaZap = window.open("", "_blank");
+    if (janelaZap) {
+      janelaZap.document.title = "Abrindo o WhatsApp…";
+      janelaZap.document.body.style.cssText =
+        "font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fff5f8;color:#d6336c;";
+      janelaZap.document.body.innerHTML =
+        "<p style='font-size:18px;text-align:center;padding:0 24px'>Abrindo o WhatsApp…<br/>Se nada acontecer, volte e toque no botão novamente.</p>";
+    }
+
     const message = [
       "🏋️ NOVA FICHA DE ANAMNESE",
       "",
@@ -239,6 +251,7 @@ function Index() {
         };
         if (navigator.canShare?.(dadosCompartilhar)) {
           await navigator.share(dadosCompartilhar);
+          janelaZap?.close();
           setImagemStatus(
             "Imagem da ficha compartilhada! Se preferir, envie também o texto pelo WhatsApp com o botão abaixo.",
           );
