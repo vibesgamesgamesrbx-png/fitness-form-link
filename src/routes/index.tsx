@@ -10,7 +10,9 @@ import {
   User,
   MessageCircleHeart,
   Send,
+  ImageDown,
 } from "lucide-react";
+import { gerarImagemFicha } from "@/lib/fichaImagem";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -93,6 +95,7 @@ function Index() {
   const [adicionais, setAdicionais] = useState("");
 
   const [errors, setErrors] = useState<string[]>([]);
+  const [imagemStatus, setImagemStatus] = useState("");
 
   const idadeAuto = useMemo(() => calcAge(nascimento), [nascimento]);
   const idade = idadeAuto !== null ? String(idadeAuto) : idadeManual;
@@ -110,7 +113,7 @@ function Index() {
     setIdadeManual(String(num));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: string[] = [];
     const phoneDigits = whatsappCliente.replace(/\D/g, "");
@@ -175,6 +178,76 @@ function Index() {
       "",
       "Confira suas informações e clique em enviar no WhatsApp. 💗",
     ].join("\n");
+
+    // Tenta compartilhar a ficha como IMAGEM bonita (abre o WhatsApp com a imagem pronta)
+    try {
+      const blob = await gerarImagemFicha(nome.trim(), [
+        {
+          titulo: "Dados Pessoais",
+          itens: [
+            { rotulo: "Nome", valor: na(nome) },
+            { rotulo: "WhatsApp", valor: na(whatsappCliente) },
+            { rotulo: "Data de nascimento", valor: na(formatBirthdate(nascimento)) },
+            { rotulo: "Idade", valor: na(idade) },
+          ],
+        },
+        { titulo: "Objetivo", itens: [{ rotulo: "Objetivo", valor: na(objetivo) }] },
+        {
+          titulo: "Atividade Física",
+          itens: [
+            { rotulo: "Treina atualmente", valor: na(treinaAtualmente) },
+            {
+              rotulo: "Tempo parada",
+              valor: treinaAtualmente === "Não" ? na(tempoParada) : "—",
+            },
+            { rotulo: "Já treinou anteriormente", valor: na(jaTreinou) },
+            {
+              rotulo: "Por quanto tempo",
+              valor: jaTreinou === "Já treinei antes" ? na(tempoTreinou) : "—",
+            },
+          ],
+        },
+        {
+          titulo: "Saúde",
+          itens: [
+            { rotulo: "Possui problema de saúde", valor: na(problemaSaude) },
+            { rotulo: "Qual", valor: problemaSaude === "Sim" ? na(qualProblema) : "—" },
+          ],
+        },
+        {
+          titulo: "Filhos",
+          itens: [
+            { rotulo: "Possui filhos", valor: na(temFilhos) },
+            { rotulo: "Quantidade", valor: temFilhos === "Sim" ? na(quantosFilhos) : "—" },
+          ],
+        },
+        { titulo: "Sono", itens: [{ rotulo: "Qualidade do sono", valor: na(sono) }] },
+        { titulo: "Alimentação", itens: [{ rotulo: "Alimentação", valor: na(alimentacao) }] },
+        {
+          titulo: "Informações Adicionais",
+          itens: [{ rotulo: "Informações adicionais", valor: na(adicionais) }],
+        },
+      ]);
+
+      if (blob) {
+        const arquivo = new File([blob], `ficha-anamnese-${nome.trim() || "cliente"}.png`, {
+          type: "image/png",
+        });
+        const dadosCompartilhar = {
+          files: [arquivo],
+          text: "🏋️ Minha Ficha de Anamnese — enviando para a Personal Juliana 💗",
+        };
+        if (navigator.canShare?.(dadosCompartilhar)) {
+          await navigator.share(dadosCompartilhar);
+          setImagemStatus(
+            "Imagem da ficha compartilhada! Se preferir, envie também o texto pelo WhatsApp com o botão abaixo.",
+          );
+          return;
+        }
+      }
+    } catch {
+      // Compartilhamento de imagem não disponível ou cancelado — segue com o envio em texto.
+    }
 
     const encodedMessage = encodeURIComponent(message);
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -524,6 +597,14 @@ function Index() {
           <Send className="h-5 w-5" />
           Enviar ficha pelo WhatsApp
         </button>
+        {imagemStatus && (
+          <div className="card-outline border-primary/40 bg-accent/40 p-3" role="status">
+            <p className="flex items-center justify-center gap-2 text-center text-sm text-primary">
+              <ImageDown className="h-4 w-4 shrink-0" />
+              {imagemStatus}
+            </p>
+          </div>
+        )}
         <p className="text-center text-xs text-muted-foreground">
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
           em enviar no WhatsApp. Nenhum dado fica salvo neste site.
