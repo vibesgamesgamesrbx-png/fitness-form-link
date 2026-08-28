@@ -141,6 +141,18 @@ function Index() {
       return;
     }
 
+    // Abre a janela do WhatsApp imediatamente (no gesto do clique) para que
+    // o navegador não bloqueie o redirecionamento que acontece depois da
+    // geração da imagem. Se o compartilhamento nativo funcionar, fechamos ela.
+    const janelaZap = window.open("", "_blank");
+    if (janelaZap) {
+      janelaZap.document.title = "Abrindo o WhatsApp…";
+      janelaZap.document.body.style.cssText =
+        "font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fff5f8;color:#d6336c;";
+      janelaZap.document.body.innerHTML =
+        "<p style='font-size:18px;text-align:center;padding:0 24px'>Abrindo o WhatsApp…<br/>Se nada acontecer, volte e toque no botão novamente.</p>";
+    }
+
     const message = [
       "🏋️ NOVA FICHA DE ANAMNESE",
       "",
@@ -239,6 +251,7 @@ function Index() {
         };
         if (navigator.canShare?.(dadosCompartilhar)) {
           await navigator.share(dadosCompartilhar);
+          janelaZap?.close();
           setImagemStatus(
             "Imagem da ficha compartilhada! Se preferir, envie também o texto pelo WhatsApp com o botão abaixo.",
           );
@@ -250,18 +263,20 @@ function Index() {
     }
 
     const encodedMessage = encodeURIComponent(message);
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const whatsappUrl = isMobile
-      ? `whatsapp://send?phone=${TRAINER_WHATSAPP}&text=${encodedMessage}`
-      : `https://web.whatsapp.com/send?phone=${TRAINER_WHATSAPP}&text=${encodedMessage}`;
+    // wa.me é o link universal oficial: abre o app no celular e o WhatsApp Web
+    // no computador, sem ser recusado por bloqueadores de pop-up.
+    const whatsappUrl = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodedMessage}`;
 
-    const whatsappLink = document.createElement("a");
-    whatsappLink.href = whatsappUrl;
-    whatsappLink.target = "_blank";
-    whatsappLink.rel = "noopener noreferrer";
-    document.body.appendChild(whatsappLink);
-    whatsappLink.click();
-    whatsappLink.remove();
+    if (janelaZap && !janelaZap.closed) {
+      janelaZap.location.href = whatsappUrl;
+    } else {
+      // Fallback: navegação na mesma aba nunca é bloqueada.
+      window.location.href = whatsappUrl;
+    }
+
+    setImagemStatus(
+      "Abrimos o WhatsApp em outra aba. É só tocar em enviar! Se a aba não abriu, toque no botão novamente.",
+    );
   };
 
   return (
