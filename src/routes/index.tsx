@@ -179,6 +179,76 @@ function Index() {
       "Confira suas informações e clique em enviar no WhatsApp. 💗",
     ].join("\n");
 
+    // Tenta compartilhar a ficha como IMAGEM bonita (abre o WhatsApp com a imagem pronta)
+    try {
+      const blob = await gerarImagemFicha(nome.trim(), [
+        {
+          titulo: "Dados Pessoais",
+          itens: [
+            { rotulo: "Nome", valor: na(nome) },
+            { rotulo: "WhatsApp", valor: na(whatsappCliente) },
+            { rotulo: "Data de nascimento", valor: na(formatBirthdate(nascimento)) },
+            { rotulo: "Idade", valor: na(idade) },
+          ],
+        },
+        { titulo: "Objetivo", itens: [{ rotulo: "Objetivo", valor: na(objetivo) }] },
+        {
+          titulo: "Atividade Física",
+          itens: [
+            { rotulo: "Treina atualmente", valor: na(treinaAtualmente) },
+            {
+              rotulo: "Tempo parada",
+              valor: treinaAtualmente === "Não" ? na(tempoParada) : "—",
+            },
+            { rotulo: "Já treinou anteriormente", valor: na(jaTreinou) },
+            {
+              rotulo: "Por quanto tempo",
+              valor: jaTreinou === "Já treinei antes" ? na(tempoTreinou) : "—",
+            },
+          ],
+        },
+        {
+          titulo: "Saúde",
+          itens: [
+            { rotulo: "Possui problema de saúde", valor: na(problemaSaude) },
+            { rotulo: "Qual", valor: problemaSaude === "Sim" ? na(qualProblema) : "—" },
+          ],
+        },
+        {
+          titulo: "Filhos",
+          itens: [
+            { rotulo: "Possui filhos", valor: na(temFilhos) },
+            { rotulo: "Quantidade", valor: temFilhos === "Sim" ? na(quantosFilhos) : "—" },
+          ],
+        },
+        { titulo: "Sono", itens: [{ rotulo: "Qualidade do sono", valor: na(sono) }] },
+        { titulo: "Alimentação", itens: [{ rotulo: "Alimentação", valor: na(alimentacao) }] },
+        {
+          titulo: "Informações Adicionais",
+          itens: [{ rotulo: "Informações adicionais", valor: na(adicionais) }],
+        },
+      ]);
+
+      if (blob) {
+        const arquivo = new File([blob], `ficha-anamnese-${nome.trim() || "cliente"}.png`, {
+          type: "image/png",
+        });
+        const dadosCompartilhar = {
+          files: [arquivo],
+          text: "🏋️ Minha Ficha de Anamnese — enviando para a Personal Juliana 💗",
+        };
+        if (navigator.canShare?.(dadosCompartilhar)) {
+          await navigator.share(dadosCompartilhar);
+          setImagemStatus(
+            "Imagem da ficha compartilhada! Se preferir, envie também o texto pelo WhatsApp com o botão abaixo.",
+          );
+          return;
+        }
+      }
+    } catch {
+      // Compartilhamento de imagem não disponível ou cancelado — segue com o envio em texto.
+    }
+
     const encodedMessage = encodeURIComponent(message);
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const whatsappUrl = isMobile
