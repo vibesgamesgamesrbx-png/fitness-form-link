@@ -597,6 +597,14 @@ function Index() {
           <Send className="h-5 w-5" />
           Enviar ficha pelo WhatsApp
         </button>
+        {imagemStatus && (
+          <div className="card-outline border-primary/40 bg-accent/40 p-3" role="status">
+            <p className="flex items-center justify-center gap-2 text-center text-sm text-primary">
+              <ImageDown className="h-4 w-4 shrink-0" />
+              {imagemStatus}
+            </p>
+          </div>
+        )}
         <p className="text-center text-xs text-muted-foreground">
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
           em enviar no WhatsApp. Nenhum dado fica salvo neste site.
