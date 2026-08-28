@@ -10,7 +10,9 @@ import {
   User,
   MessageCircleHeart,
   Send,
+  ImageDown,
 } from "lucide-react";
+import { gerarImagemFicha } from "@/lib/fichaImagem";
 
 export const Route = createFileRoute("/")({
   component: Index,
