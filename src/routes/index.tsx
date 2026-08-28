@@ -263,18 +263,20 @@ function Index() {
     }
 
     const encodedMessage = encodeURIComponent(message);
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const whatsappUrl = isMobile
-      ? `whatsapp://send?phone=${TRAINER_WHATSAPP}&text=${encodedMessage}`
-      : `https://web.whatsapp.com/send?phone=${TRAINER_WHATSAPP}&text=${encodedMessage}`;
+    // wa.me é o link universal oficial: abre o app no celular e o WhatsApp Web
+    // no computador, sem ser recusado por bloqueadores de pop-up.
+    const whatsappUrl = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodedMessage}`;
 
-    const whatsappLink = document.createElement("a");
-    whatsappLink.href = whatsappUrl;
-    whatsappLink.target = "_blank";
-    whatsappLink.rel = "noopener noreferrer";
-    document.body.appendChild(whatsappLink);
-    whatsappLink.click();
-    whatsappLink.remove();
+    if (janelaZap && !janelaZap.closed) {
+      janelaZap.location.href = whatsappUrl;
+    } else {
+      // Fallback: navegação na mesma aba nunca é bloqueada.
+      window.location.href = whatsappUrl;
+    }
+
+    setImagemStatus(
+      "Abrimos o WhatsApp em outra aba. É só tocar em enviar! Se a aba não abriu, toque no botão novamente.",
+    );
   };
 
   return (
