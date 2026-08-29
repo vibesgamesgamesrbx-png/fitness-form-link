@@ -530,6 +530,16 @@ function Index() {
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
           em enviar no WhatsApp. Nenhum dado fica salvo neste site.
         </p>
+        {whatsappUrl && (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-center text-sm font-semibold text-primary underline underline-offset-4"
+          >
+            Se o WhatsApp não abrir, toque aqui para enviar a ficha
+          </a>
+        )}
       </form>
 
       <footer className="mt-10 px-5 text-center">
