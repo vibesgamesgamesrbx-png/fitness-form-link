@@ -93,6 +93,7 @@ function Index() {
   const [adicionais, setAdicionais] = useState("");
 
   const [errors, setErrors] = useState<string[]>([]);
+  const [whatsappUrl, setWhatsappUrl] = useState("");
 
   const idadeAuto = useMemo(() => calcAge(nascimento), [nascimento]);
   const idade = idadeAuto !== null ? String(idadeAuto) : idadeManual;
