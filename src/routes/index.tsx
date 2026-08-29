@@ -176,8 +176,23 @@ function Index() {
       "Ficha preenchida pelo site. 💗",
     ].join("\n");
 
-    const whatsappUrl = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`;
-    window.location.assign(whatsappUrl);
+    const url = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`;
+    setWhatsappUrl(url);
+
+    // Abre em NOVA ABA de forma síncrona (dentro do gesto do clique),
+    // assim o navegador não bloqueia e o WhatsApp nunca fica preso no quadro do preview.
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    // Garantia extra: se a nova aba foi bloqueada, navega na mesma aba.
+    setTimeout(() => {
+      if (!document.hidden) window.open(url, "_blank", "noopener,noreferrer");
+    }, 400);
   };
 
   return (
