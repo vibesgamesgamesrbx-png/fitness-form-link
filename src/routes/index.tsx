@@ -189,11 +189,6 @@ function Index() {
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-
-    // Garantia extra: se a nova aba foi bloqueada, navega na mesma aba.
-    setTimeout(() => {
-      if (!document.hidden) window.open(url, "_blank", "noopener,noreferrer");
-    }, 400);
   };
 
   return (
