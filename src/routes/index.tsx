@@ -93,6 +93,7 @@ function Index() {
   const [adicionais, setAdicionais] = useState("");
 
   const [errors, setErrors] = useState<string[]>([]);
+  const [whatsappUrl, setWhatsappUrl] = useState("");
 
   const idadeAuto = useMemo(() => calcAge(nascimento), [nascimento]);
   const idade = idadeAuto !== null ? String(idadeAuto) : idadeManual;
@@ -176,8 +177,18 @@ function Index() {
       "Ficha preenchida pelo site. 💗",
     ].join("\n");
 
-    const whatsappUrl = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`;
-    window.location.assign(whatsappUrl);
+    const url = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`;
+    setWhatsappUrl(url);
+
+    // Abre em NOVA ABA de forma síncrona (dentro do gesto do clique),
+    // assim o navegador não bloqueia e o WhatsApp nunca fica preso no quadro do preview.
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
   };
 
   return (
@@ -514,6 +525,16 @@ function Index() {
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
           em enviar no WhatsApp. Nenhum dado fica salvo neste site.
         </p>
+        {whatsappUrl && (
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-center text-sm font-semibold text-primary underline underline-offset-4"
+          >
+            Se o WhatsApp não abrir, toque aqui para enviar a ficha
+          </a>
+        )}
       </form>
 
       <footer className="mt-10 px-5 text-center">
