@@ -595,6 +595,25 @@ function Index() {
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
           em enviar no WhatsApp. Nenhum dado fica salvo neste site.
         </p>
+        {imagemUrl && (
+          <div className="card-outline flex flex-col items-center gap-3 p-4">
+            <p className="text-center text-sm text-muted-foreground">
+              Sua ficha em imagem está pronta 💗
+            </p>
+            <img
+              src={imagemUrl}
+              alt="Ficha de anamnese preenchida"
+              className="w-full rounded-xl border border-border"
+            />
+            <a
+              href={imagemUrl}
+              download="ficha-anamnese.png"
+              className="text-sm font-semibold text-primary underline underline-offset-4"
+            >
+              Baixar a imagem da ficha
+            </a>
+          </div>
+        )}
         {whatsappUrl && (
           <a
             href={whatsappUrl}
@@ -602,9 +621,12 @@ function Index() {
             rel="noopener noreferrer"
             className="text-center text-sm font-semibold text-primary underline underline-offset-4"
           >
-            Se o WhatsApp não abrir, toque aqui para enviar a ficha
+            {enviado
+              ? "Se o WhatsApp não abrir, toque aqui para enviar a ficha"
+              : "Abrir o WhatsApp"}
           </a>
         )}
+
       </form>
 
       <footer className="mt-10 px-5 text-center">
