@@ -11,6 +11,8 @@ import {
   MessageCircleHeart,
   Send,
 } from "lucide-react";
+import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
+
 
 export const Route = createFileRoute("/")({
   component: Index,
