@@ -11,6 +11,8 @@ import {
   MessageCircleHeart,
   Send,
 } from "lucide-react";
+import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
+
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -94,6 +96,9 @@ function Index() {
 
   const [errors, setErrors] = useState<string[]>([]);
   const [whatsappUrl, setWhatsappUrl] = useState("");
+  const [imagemUrl, setImagemUrl] = useState("");
+  const [enviado, setEnviado] = useState(false);
+
 
   const idadeAuto = useMemo(() => calcAge(nascimento), [nascimento]);
   const idade = idadeAuto !== null ? String(idadeAuto) : idadeManual;
@@ -111,8 +116,9 @@ function Index() {
     setIdadeManual(String(num));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const errs: string[] = [];
     const phoneDigits = whatsappCliente.replace(/\D/g, "");
     const idadeNum = Number(idade);
@@ -139,49 +145,112 @@ function Index() {
       return;
     }
 
+    const secoes: FichaSecao[] = [
+      {
+        titulo: "Dados pessoais",
+        itens: [
+          { rotulo: "Nome completo", valor: na(nome) },
+          { rotulo: "WhatsApp", valor: na(whatsappCliente) },
+          { rotulo: "Data de nascimento", valor: na(formatBirthdate(nascimento)) },
+          { rotulo: "Idade", valor: na(idade) },
+        ],
+      },
+      { titulo: "Objetivo", itens: [{ rotulo: "Principal objetivo", valor: na(objetivo) }] },
+      {
+        titulo: "Atividade física",
+        itens: [
+          { rotulo: "Treina atualmente", valor: na(treinaAtualmente) },
+          {
+            rotulo: "Tempo parada",
+            valor: treinaAtualmente === "Não" ? na(tempoParada) : "—",
+          },
+          { rotulo: "Já treinou anteriormente", valor: na(jaTreinou) },
+          {
+            rotulo: "Por quanto tempo",
+            valor: jaTreinou === "Já treinei antes" ? na(tempoTreinou) : "—",
+          },
+        ],
+      },
+      {
+        titulo: "Saúde",
+        itens: [
+          { rotulo: "Possui problema de saúde", valor: na(problemaSaude) },
+          { rotulo: "Qual", valor: problemaSaude === "Sim" ? na(qualProblema) : "—" },
+        ],
+      },
+      {
+        titulo: "Filhos",
+        itens: [
+          { rotulo: "Possui filhos", valor: na(temFilhos) },
+          { rotulo: "Quantidade", valor: temFilhos === "Sim" ? na(quantosFilhos) : "—" },
+        ],
+      },
+      { titulo: "Sono", itens: [{ rotulo: "Qualidade do sono", valor: na(sono) }] },
+      { titulo: "Alimentação", itens: [{ rotulo: "Como se alimenta", valor: na(alimentacao) }] },
+      {
+        titulo: "Informações adicionais",
+        itens: [{ rotulo: "Observações", valor: na(adicionais) }],
+      },
+    ];
+
     const message = [
       "🏋️ NOVA FICHA DE ANAMNESE",
       "",
-      "👤 DADOS PESSOAIS",
-      `Nome: ${na(nome)}`,
-      `WhatsApp: ${na(whatsappCliente)}`,
-      `Data de nascimento: ${na(formatBirthdate(nascimento))}`,
-      `Idade: ${na(idade)}`,
-      "",
-      "🎯 OBJETIVO",
-      `Objetivo: ${na(objetivo)}`,
-      "",
-      "🏋️ ATIVIDADE FÍSICA",
-      `Treina atualmente: ${na(treinaAtualmente)}`,
-      `Tempo parada: ${treinaAtualmente === "Não" ? na(tempoParada) : "—"}`,
-      `Já treinou anteriormente: ${na(jaTreinou)}`,
-      `Por quanto tempo: ${jaTreinou === "Já treinei antes" ? na(tempoTreinou) : "—"}`,
-      "",
-      "❤️ SAÚDE",
-      `Possui problema de saúde: ${na(problemaSaude)}`,
-      `Qual: ${problemaSaude === "Sim" ? na(qualProblema) : "—"}`,
-      "",
-      "👶 FILHOS",
-      `Possui filhos: ${na(temFilhos)}`,
-      `Quantidade: ${temFilhos === "Sim" ? na(quantosFilhos) : "—"}`,
-      "",
-      "😴 SONO",
-      `Qualidade do sono: ${na(sono)}`,
-      "",
-      "🥗 ALIMENTAÇÃO",
-      `Alimentação: ${na(alimentacao)}`,
-      "",
-      "📝 INFORMAÇÕES ADICIONAIS",
-      `Informações adicionais: ${na(adicionais)}`,
-      "",
+      ...secoes.flatMap((s) => [
+        s.titulo.toUpperCase(),
+        ...s.itens.map((i) => `${i.rotulo}: ${i.valor}`),
+        "",
+      ]),
       "Ficha preenchida pelo site. 💗",
     ].join("\n");
 
     const url = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`;
     setWhatsappUrl(url);
 
-    // Abre em NOVA ABA de forma síncrona (dentro do gesto do clique),
-    // assim o navegador não bloqueia e o WhatsApp nunca fica preso no quadro do preview.
+    // Gera a ficha como IMAGEM (PNG) bonitinha
+    let blob: Blob | null = null;
+    try {
+      blob = await gerarImagemFicha(nome, secoes);
+    } catch {
+      blob = null;
+    }
+
+    if (blob) {
+      const objectUrl = URL.createObjectURL(blob);
+      setImagemUrl(objectUrl);
+
+      const file = new File([blob], `ficha-anamnese-${nome.trim() || "cliente"}.png`, {
+        type: "image/png",
+      });
+
+      // Compartilha a IMAGEM direto para o WhatsApp (celular)
+      if (
+        typeof navigator !== "undefined" &&
+        navigator.canShare?.({ files: [file] }) &&
+        navigator.share
+      ) {
+        try {
+          await navigator.share({
+            files: [file],
+            text: `Ficha de anamnese — ${nome.trim() || "Cliente"}`,
+          });
+          setEnviado(true);
+          return;
+        } catch {
+          // usuária cancelou ou não deu — segue para o WhatsApp com o texto
+        }
+      } else {
+        // Computador: baixa a imagem para anexar na conversa que vai abrir
+        const dl = document.createElement("a");
+        dl.href = objectUrl;
+        dl.download = file.name;
+        document.body.appendChild(dl);
+        dl.click();
+        dl.remove();
+      }
+    }
+
+    setEnviado(true);
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.target = "_blank";
@@ -190,6 +259,7 @@ function Index() {
     anchor.click();
     anchor.remove();
   };
+
 
   return (
     <div className="min-h-screen bg-background pb-16">
@@ -525,6 +595,25 @@ function Index() {
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
           em enviar no WhatsApp. Nenhum dado fica salvo neste site.
         </p>
+        {imagemUrl && (
+          <div className="card-outline flex flex-col items-center gap-3 p-4">
+            <p className="text-center text-sm text-muted-foreground">
+              Sua ficha em imagem está pronta 💗
+            </p>
+            <img
+              src={imagemUrl}
+              alt="Ficha de anamnese preenchida"
+              className="w-full rounded-xl border border-border"
+            />
+            <a
+              href={imagemUrl}
+              download="ficha-anamnese.png"
+              className="text-sm font-semibold text-primary underline underline-offset-4"
+            >
+              Baixar a imagem da ficha
+            </a>
+          </div>
+        )}
         {whatsappUrl && (
           <a
             href={whatsappUrl}
@@ -532,9 +621,12 @@ function Index() {
             rel="noopener noreferrer"
             className="text-center text-sm font-semibold text-primary underline underline-offset-4"
           >
-            Se o WhatsApp não abrir, toque aqui para enviar a ficha
+            {enviado
+              ? "Se o WhatsApp não abrir, toque aqui para enviar a ficha"
+              : "Abrir o WhatsApp"}
           </a>
         )}
+
       </form>
 
       <footer className="mt-10 px-5 text-center">
