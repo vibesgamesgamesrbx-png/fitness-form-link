@@ -342,18 +342,7 @@ function Index() {
                 autoComplete="name"
               />
             </label>
-            <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Seu WhatsApp (com DDD) *
-              <input
-                className="field-input"
-                value={whatsappCliente}
-                onChange={(e) => setWhatsappCliente(maskPhone(e.target.value))}
-                placeholder="(11) 99999-9999"
-                inputMode="tel"
-                autoComplete="tel"
-              />
-            </label>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
               <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
                 Data de nascimento *
                 <input
@@ -376,6 +365,18 @@ function Index() {
                 />
               </label>
             </div>
+
+            <label className="flex flex-col gap-1.5 text-sm font-medium">
+              Seu WhatsApp (com DDD) *
+              <input
+                className="field-input"
+                value={whatsappCliente}
+                onChange={(e) => setWhatsappCliente(maskPhone(e.target.value))}
+                placeholder="(11) 99999-9999"
+                inputMode="tel"
+                autoComplete="tel"
+              />
+            </label>
           </div>
         </section>
 
