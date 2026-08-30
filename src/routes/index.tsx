@@ -12,6 +12,7 @@ import {
   Send,
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
+import Planos from "@/components/Planos";
 
 
 export const Route = createFileRoute("/")({
@@ -94,6 +95,9 @@ function Index() {
   const [alimentacao, setAlimentacao] = useState("");
   const [adicionais, setAdicionais] = useState("");
 
+  const [plano, setPlano] = useState("");
+  const [pagamento, setPagamento] = useState("");
+
   const [errors, setErrors] = useState<string[]>([]);
   const [whatsappUrl, setWhatsappUrl] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
@@ -138,6 +142,8 @@ function Index() {
     if (problemaSaude === "Sim" && !qualProblema.trim())
       errs.push("Descreva qual problema de saúde você precisa destacar.");
     if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
+    if (!plano) errs.push("Escolha o plano desejado na seção Plano e Pagamento.");
+    if (!pagamento) errs.push("Escolha a forma de pagamento.");
 
     setErrors(errs);
     if (errs.length > 0) {
@@ -191,14 +197,29 @@ function Index() {
         titulo: "Informações adicionais",
         itens: [{ rotulo: "Observações", valor: na(adicionais) }],
       },
+      {
+        titulo: "Plano e pagamento",
+        itens: [
+          { rotulo: "Plano", valor: na(plano) },
+          { rotulo: "Pagamento", valor: na(pagamento) },
+        ],
+      },
     ];
+
+    const observacaoPagamento =
+      pagamento === "Pix"
+        ? "Pagamento via Pix Copia e Cola disponível na página da ficha."
+        : pagamento
+          ? "Aguardo o link de pagamento por cartão pelo WhatsApp."
+          : "";
 
     const message = [
       "🏋️ NOVA FICHA DE ANAMNESE",
       "",
       ...secoes.flatMap((s) => [
-        s.titulo.toUpperCase(),
+        s.titulo === "Plano e pagamento" ? "💳 PLANO E PAGAMENTO" : s.titulo.toUpperCase(),
         ...s.itens.map((i) => `${i.rotulo}: ${i.valor}`),
+        ...(s.titulo === "Plano e pagamento" && observacaoPagamento ? [observacaoPagamento] : []),
         "",
       ]),
       "Ficha preenchida pelo site. 💗",
@@ -570,6 +591,21 @@ function Index() {
             />
           </label>
         </section>
+
+        {/* 9. Plano e Pagamento */}
+        <section className="card-outline p-5">
+          <span className="section-chip">
+            <Heart className="h-3.5 w-3.5" /> 9. Plano e Pagamento
+          </span>
+          <Planos
+            plano={plano}
+            setPlano={setPlano}
+            pagamento={pagamento}
+            setPagamento={setPagamento}
+          />
+        </section>
+
+
 
         {errors.length > 0 && (
           <div className="card-outline border-destructive/60 p-4" role="alert">
