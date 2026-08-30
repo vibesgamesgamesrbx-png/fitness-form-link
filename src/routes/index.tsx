@@ -12,7 +12,7 @@ import {
   Send,
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
-import Planos from "@/components/Planos";
+import Planos, { LINKS_CARTAO } from "@/components/Planos";
 
 
 export const Route = createFileRoute("/")({
@@ -43,30 +43,10 @@ const MIN_AGE = 5;
 const MAX_AGE = 110;
 
 const OBJETIVOS_OPCOES = [
+  "Saúde e qualidade de vida",
   "Emagrecimento",
   "Ganho de massa muscular",
-  "Definição muscular",
-  "Aumento de força",
-  "Condicionamento físico",
-  "Melhorar resistência",
-  "Melhorar mobilidade",
-  "Melhorar flexibilidade",
-  "Melhorar postura",
-  "Melhorar equilíbrio",
-  "Aumentar disposição e energia",
-  "Melhorar qualidade de vida",
-  "Manter o peso atual",
-  "Reduzir medidas",
-  "Aumentar massa muscular em regiões específicas",
-  "Fortalecer a musculatura",
-  "Melhorar o desempenho esportivo",
-  "Preparação para alguma atividade ou esporte",
-  "Retomar a prática de exercícios",
-  "Criar uma rotina de exercícios",
-  "Melhorar a autoestima e confiança",
-  "Preparação para um evento ou objetivo específico",
-  "Recuperar o condicionamento após um período parada",
-  "Outro",
+  "Fortalecimento",
 ];
 
 const na = (v: string) => (v.trim() ? v.trim() : "Não informado");
@@ -106,7 +86,7 @@ function Index() {
   const [idadeManual, setIdadeManual] = useState("");
 
   const [objetivos, setObjetivos] = useState<string[]>([]);
-  const [objetivoOutro, setObjetivoOutro] = useState("");
+  
 
   const [treinaAtualmente, setTreinaAtualmente] = useState("");
   const [tempoParada, setTempoParada] = useState("");
@@ -167,8 +147,6 @@ function Index() {
     if (!idade || Number.isNaN(idadeNum) || idadeNum < MIN_AGE || idadeNum > MAX_AGE)
       errs.push(`A idade deve ser entre ${MIN_AGE} e ${MAX_AGE} anos.`);
     if (objetivos.length === 0) errs.push("Selecione pelo menos um objetivo com o treino.");
-    if (objetivos.includes("Outro") && !objetivoOutro.trim())
-      errs.push("Descreva o objetivo no campo 'Outro'.");
     if (problemaSaude === "Sim" && !qualProblema.trim())
       errs.push("Descreva qual problema de saúde você precisa destacar.");
     if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
@@ -191,7 +169,10 @@ function Index() {
           { rotulo: "Idade", valor: na(idade) },
         ],
       },
-      { titulo: "Objetivo", itens: [{ rotulo: "Principal objetivo", valor: na(objetivo) }] },
+      {
+        titulo: "Objetivo",
+        itens: [{ rotulo: "Principal objetivo", valor: na(objetivos.join(", ")) }],
+      },
       {
         titulo: "Atividade física",
         itens: [
@@ -232,6 +213,9 @@ function Index() {
         itens: [
           { rotulo: "Plano", valor: na(plano) },
           { rotulo: "Pagamento", valor: na(pagamento) },
+          ...(pagamento?.startsWith("Cartão") && LINKS_CARTAO[plano]
+            ? [{ rotulo: "Link de pagamento", valor: LINKS_CARTAO[plano] }]
+            : []),
         ],
       },
     ];
@@ -239,8 +223,8 @@ function Index() {
     const observacaoPagamento =
       pagamento === "Pix"
         ? "Pagamento via Pix Copia e Cola disponível na página da ficha."
-        : pagamento
-          ? "Aguardo o link de pagamento por cartão pelo WhatsApp."
+        : pagamento?.startsWith("Cartão") && LINKS_CARTAO[plano]
+          ? `Pague por cartão aqui: ${LINKS_CARTAO[plano]}`
           : "";
 
     const message = [
@@ -430,18 +414,6 @@ function Index() {
                 );
               })}
             </div>
-            {objetivos.includes("Outro") && (
-              <label className="mt-3 flex flex-col gap-1.5 text-sm font-medium">
-                Especifique o outro objetivo *
-                <input
-                  className="field-input"
-                  value={objetivoOutro}
-                  onChange={(e) => setObjetivoOutro(e.target.value)}
-                  placeholder="Descreva seu objetivo"
-                  maxLength={200}
-                />
-              </label>
-            )}
           </fieldset>
         </section>
 
