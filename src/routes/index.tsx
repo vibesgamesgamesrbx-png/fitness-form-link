@@ -142,6 +142,8 @@ function Index() {
     if (problemaSaude === "Sim" && !qualProblema.trim())
       errs.push("Descreva qual problema de saúde você precisa destacar.");
     if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
+    if (!plano) errs.push("Escolha o plano desejado na seção Plano e Pagamento.");
+    if (!pagamento) errs.push("Escolha a forma de pagamento.");
 
     setErrors(errs);
     if (errs.length > 0) {
