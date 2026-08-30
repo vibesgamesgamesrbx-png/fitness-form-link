@@ -6,21 +6,32 @@ export const PIX_COPIA_E_COLA =
 
 export const FORMAS_PAGAMENTO = ["Pix", "Cartão de crédito", "Cartão de débito"] as const;
 
-export const GRUPOS_PLANOS: { frequencia: string; valorSessao: string; opcoes: string[] }[] = [
+export const GRUPOS_PLANOS: {
+  frequencia: string;
+  valorSessao: string;
+  opcoes: string[];
+  economiaTrimestral: string;
+}[] = [
   {
     frequencia: "2x na semana",
     valorSessao: "R$ 120 por sessão",
     opcoes: ["2x na semana — Mensal R$ 960", "2x na semana — Trimestral R$ 2.640"],
+    // 3 × R$ 960 = R$ 2.880 − R$ 2.640 = R$ 240 de desconto
+    economiaTrimestral: "R$ 240",
   },
   {
     frequencia: "3x na semana",
     valorSessao: "R$ 100 por sessão",
     opcoes: ["3x na semana — Mensal R$ 1.200", "3x na semana — Trimestral R$ 3.300"],
+    // 3 × R$ 1.200 = R$ 3.600 − R$ 3.300 = R$ 300 de desconto
+    economiaTrimestral: "R$ 300",
   },
   {
     frequencia: "4x na semana",
     valorSessao: "R$ 95 por sessão",
     opcoes: ["4x na semana — Mensal R$ 1.520", "4x na semana — Trimestral R$ 4.200"],
+    // 3 × R$ 1.520 = R$ 4.560 − R$ 4.200 = R$ 360 de desconto
+    economiaTrimestral: "R$ 360",
   },
 ];
 
@@ -90,6 +101,7 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento }: Pro
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {grupo.opcoes.map((opcao) => {
                 const ativo = plano === opcao;
+                const ehTrimestral = opcao.includes("Trimestral");
                 return (
                   <button
                     key={opcao}
@@ -104,9 +116,14 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento }: Pro
                       pulando === opcao ? "scale-[1.05]" : "scale-100",
                     ].join(" ")}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex flex-wrap items-center gap-2">
                       {ativo && <Check className="h-4 w-4 shrink-0 text-primary" />}
                       {opcao.split("—")[1]?.trim() ?? opcao}
+                      {ehTrimestral && (
+                        <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
+                          Economize {grupo.economiaTrimestral}
+                        </span>
+                      )}
                     </span>
                   </button>
                 );
