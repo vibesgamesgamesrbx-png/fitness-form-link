@@ -42,6 +42,33 @@ const MAX_YEAR = 2020;
 const MIN_AGE = 5;
 const MAX_AGE = 110;
 
+const OBJETIVOS_OPCOES = [
+  "Emagrecimento",
+  "Ganho de massa muscular",
+  "Definição muscular",
+  "Aumento de força",
+  "Condicionamento físico",
+  "Melhorar resistência",
+  "Melhorar mobilidade",
+  "Melhorar flexibilidade",
+  "Melhorar postura",
+  "Melhorar equilíbrio",
+  "Aumentar disposição e energia",
+  "Melhorar qualidade de vida",
+  "Manter o peso atual",
+  "Reduzir medidas",
+  "Aumentar massa muscular em regiões específicas",
+  "Fortalecer a musculatura",
+  "Melhorar o desempenho esportivo",
+  "Preparação para alguma atividade ou esporte",
+  "Retomar a prática de exercícios",
+  "Criar uma rotina de exercícios",
+  "Melhorar a autoestima e confiança",
+  "Preparação para um evento ou objetivo específico",
+  "Recuperar o condicionamento após um período parada",
+  "Outro",
+];
+
 const na = (v: string) => (v.trim() ? v.trim() : "Não informado");
 
 function formatBirthdate(iso: string) {
