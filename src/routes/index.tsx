@@ -166,7 +166,9 @@ function Index() {
     }
     if (!idade || Number.isNaN(idadeNum) || idadeNum < MIN_AGE || idadeNum > MAX_AGE)
       errs.push(`A idade deve ser entre ${MIN_AGE} e ${MAX_AGE} anos.`);
-    if (!objetivo.trim()) errs.push("Conte qual é o seu principal objetivo com o treino.");
+    if (objetivos.length === 0) errs.push("Selecione pelo menos um objetivo com o treino.");
+    if (objetivos.includes("Outro") && !objetivoOutro.trim())
+      errs.push("Descreva o objetivo no campo 'Outro'.");
     if (problemaSaude === "Sim" && !qualProblema.trim())
       errs.push("Descreva qual problema de saúde você precisa destacar.");
     if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
