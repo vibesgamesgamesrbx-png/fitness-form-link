@@ -78,7 +78,8 @@ function Index() {
   const [nascimento, setNascimento] = useState("");
   const [idadeManual, setIdadeManual] = useState("");
 
-  const [objetivo, setObjetivo] = useState("");
+  const [objetivos, setObjetivos] = useState<string[]>([]);
+  const [objetivoOutro, setObjetivoOutro] = useState("");
 
   const [treinaAtualmente, setTreinaAtualmente] = useState("");
   const [tempoParada, setTempoParada] = useState("");
