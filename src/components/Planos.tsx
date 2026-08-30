@@ -24,6 +24,22 @@ export const GRUPOS_PLANOS: { frequencia: string; valorSessao: string; opcoes: s
   },
 ];
 
+/** Links da maquininha (InfinitePay) por plano escolhido. */
+export const LINKS_CARTAO: Record<string, string> = {
+  "2x na semana — Mensal R$ 960":
+    "https://link.infinitepay.io/juliana-doro-truglia/VC1DLUMtUg-KlCPvaWOkm-960,00",
+  "2x na semana — Trimestral R$ 2.640":
+    "https://link.infinitepay.io/juliana-doro-truglia/VC1DLUMtUg-4ehdExTKeq-2640,00",
+  "3x na semana — Mensal R$ 1.200":
+    "https://link.infinitepay.io/juliana-doro-truglia/VC1DLUMtUg-A2xbzvw90d-1200,00",
+  "3x na semana — Trimestral R$ 3.300":
+    "https://link.infinitepay.io/juliana-doro-truglia/VC1DLUMtUg-2DrlXN0RA0-3300,00",
+  "4x na semana — Mensal R$ 1.520":
+    "https://link.infinitepay.io/juliana-doro-truglia/VC1DLUMtUg-HuMiWOe4bT-1520,00",
+  "4x na semana — Trimestral R$ 4.200":
+    "https://link.infinitepay.io/juliana-doro-truglia/VC1DLUMtUg-DDP3xcGqVC-4200,00",
+};
+
 type Props = {
   plano: string;
   setPlano: (v: string) => void;
@@ -150,10 +166,27 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento }: Pro
           <p className="flex items-center gap-2 text-sm font-semibold text-primary">
             <CreditCard className="h-4 w-4" /> Pagamento por cartão
           </p>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            O link de pagamento será enviado para você pelo WhatsApp da Juliana após o envio da
-            ficha. <Sparkles className="inline h-3.5 w-3.5 text-rosegold" />
-          </p>
+          {plano && LINKS_CARTAO[plano] ? (
+            <>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                Pague com segurança na maquininha da Juliana:{" "}
+                <Sparkles className="inline h-3.5 w-3.5 text-rosegold" />
+              </p>
+              <a
+                href={LINKS_CARTAO[plano]}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-center text-sm font-bold uppercase tracking-wide text-primary-foreground transition-transform active:scale-[0.98]"
+              >
+                <CreditCard className="h-4 w-4" />
+                Pagar {plano.split("—")[1]?.trim() ?? plano}
+              </a>
+            </>
+          ) : (
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Escolha o seu plano acima para liberar o link de pagamento por cartão.
+            </p>
+          )}
         </div>
       )}
     </div>
