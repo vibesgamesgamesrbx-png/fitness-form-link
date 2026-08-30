@@ -14,21 +14,21 @@ export const GRUPOS_PLANOS: {
 }[] = [
   {
     frequencia: "2x na semana",
-    valorSessao: "R$ 120 por sessão",
+    valorSessao: "R$ 120 por aula",
     opcoes: ["2x na semana — Mensal R$ 960", "2x na semana — Trimestral R$ 2.640"],
     // 3 × R$ 960 = R$ 2.880 − R$ 2.640 = R$ 240 de desconto
     economiaTrimestral: "R$ 240",
   },
   {
     frequencia: "3x na semana",
-    valorSessao: "R$ 100 por sessão",
+    valorSessao: "R$ 100 por aula",
     opcoes: ["3x na semana — Mensal R$ 1.200", "3x na semana — Trimestral R$ 3.300"],
     // 3 × R$ 1.200 = R$ 3.600 − R$ 3.300 = R$ 300 de desconto
     economiaTrimestral: "R$ 300",
   },
   {
     frequencia: "4x na semana",
-    valorSessao: "R$ 95 por sessão",
+    valorSessao: "R$ 95 por aula",
     opcoes: ["4x na semana — Mensal R$ 1.520", "4x na semana — Trimestral R$ 4.200"],
     // 3 × R$ 1.520 = R$ 4.560 − R$ 4.200 = R$ 360 de desconto
     economiaTrimestral: "R$ 360",
@@ -121,7 +121,7 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento }: Pro
                       {opcao.split("—")[1]?.trim() ?? opcao}
                       {ehTrimestral && (
                         <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
-                          Economize {grupo.economiaTrimestral}
+                          trimestral: economize {grupo.economiaTrimestral}
                         </span>
                       )}
                     </span>
