@@ -12,6 +12,7 @@ import {
   Send,
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
+import Planos from "@/components/Planos";
 
 
 export const Route = createFileRoute("/")({
