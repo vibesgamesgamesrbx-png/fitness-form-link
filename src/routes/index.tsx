@@ -400,16 +400,49 @@ function Index() {
           <span className="section-chip">
             <Target className="h-3.5 w-3.5" /> 2. Objetivo
           </span>
-          <label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">
-            Qual o seu principal objetivo com o treino? *
-            <textarea
-              className="field-input min-h-24 resize-y"
-              value={objetivo}
-              onChange={(e) => setObjetivo(e.target.value)}
-              placeholder="Ex.: emagrecimento, ganho de massa muscular, condicionamento..."
-              maxLength={500}
-            />
-          </label>
+          <fieldset className="mt-4">
+            <legend className="mb-2 text-sm font-medium">
+              Qual o seu principal objetivo com o treino? *
+            </legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {OBJETIVOS_OPCOES.map((opt) => {
+                const checked = objetivos.includes(opt);
+                return (
+                  <label
+                    key={opt}
+                    className={[
+                      "radio-card",
+                      checked ? "border-primary bg-accent font-semibold text-accent-foreground" : "",
+                    ].join(" ")}
+                  >
+                    <input
+                      type="checkbox"
+                      className="radio-dot"
+                      checked={checked}
+                      onChange={() => {
+                        setObjetivos((prev) =>
+                          prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
+                        );
+                      }}
+                    />
+                    {opt}
+                  </label>
+                );
+              })}
+            </div>
+            {objetivos.includes("Outro") && (
+              <label className="mt-3 flex flex-col gap-1.5 text-sm font-medium">
+                Especifique o outro objetivo *
+                <input
+                  className="field-input"
+                  value={objetivoOutro}
+                  onChange={(e) => setObjetivoOutro(e.target.value)}
+                  placeholder="Descreva seu objetivo"
+                  maxLength={200}
+                />
+              </label>
+            )}
+          </fieldset>
         </section>
 
         {/* 3. Atividade Física */}
