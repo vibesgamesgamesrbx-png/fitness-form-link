@@ -42,6 +42,33 @@ const MAX_YEAR = 2020;
 const MIN_AGE = 5;
 const MAX_AGE = 110;
 
+const OBJETIVOS_OPCOES = [
+  "Emagrecimento",
+  "Ganho de massa muscular",
+  "Definição muscular",
+  "Aumento de força",
+  "Condicionamento físico",
+  "Melhorar resistência",
+  "Melhorar mobilidade",
+  "Melhorar flexibilidade",
+  "Melhorar postura",
+  "Melhorar equilíbrio",
+  "Aumentar disposição e energia",
+  "Melhorar qualidade de vida",
+  "Manter o peso atual",
+  "Reduzir medidas",
+  "Aumentar massa muscular em regiões específicas",
+  "Fortalecer a musculatura",
+  "Melhorar o desempenho esportivo",
+  "Preparação para alguma atividade ou esporte",
+  "Retomar a prática de exercícios",
+  "Criar uma rotina de exercícios",
+  "Melhorar a autoestima e confiança",
+  "Preparação para um evento ou objetivo específico",
+  "Recuperar o condicionamento após um período parada",
+  "Outro",
+];
+
 const na = (v: string) => (v.trim() ? v.trim() : "Não informado");
 
 function formatBirthdate(iso: string) {
@@ -78,7 +105,8 @@ function Index() {
   const [nascimento, setNascimento] = useState("");
   const [idadeManual, setIdadeManual] = useState("");
 
-  const [objetivo, setObjetivo] = useState("");
+  const [objetivos, setObjetivos] = useState<string[]>([]);
+  const [objetivoOutro, setObjetivoOutro] = useState("");
 
   const [treinaAtualmente, setTreinaAtualmente] = useState("");
   const [tempoParada, setTempoParada] = useState("");
@@ -138,7 +166,9 @@ function Index() {
     }
     if (!idade || Number.isNaN(idadeNum) || idadeNum < MIN_AGE || idadeNum > MAX_AGE)
       errs.push(`A idade deve ser entre ${MIN_AGE} e ${MAX_AGE} anos.`);
-    if (!objetivo.trim()) errs.push("Conte qual é o seu principal objetivo com o treino.");
+    if (objetivos.length === 0) errs.push("Selecione pelo menos um objetivo com o treino.");
+    if (objetivos.includes("Outro") && !objetivoOutro.trim())
+      errs.push("Descreva o objetivo no campo 'Outro'.");
     if (problemaSaude === "Sim" && !qualProblema.trim())
       errs.push("Descreva qual problema de saúde você precisa destacar.");
     if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
@@ -370,16 +400,49 @@ function Index() {
           <span className="section-chip">
             <Target className="h-3.5 w-3.5" /> 2. Objetivo
           </span>
-          <label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">
-            Qual o seu principal objetivo com o treino? *
-            <textarea
-              className="field-input min-h-24 resize-y"
-              value={objetivo}
-              onChange={(e) => setObjetivo(e.target.value)}
-              placeholder="Ex.: emagrecimento, ganho de massa muscular, condicionamento..."
-              maxLength={500}
-            />
-          </label>
+          <fieldset className="mt-4">
+            <legend className="mb-2 text-sm font-medium">
+              Qual o seu principal objetivo com o treino? *
+            </legend>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {OBJETIVOS_OPCOES.map((opt) => {
+                const checked = objetivos.includes(opt);
+                return (
+                  <label
+                    key={opt}
+                    className={[
+                      "radio-card",
+                      checked ? "border-primary bg-accent font-semibold text-accent-foreground" : "",
+                    ].join(" ")}
+                  >
+                    <input
+                      type="checkbox"
+                      className="radio-dot"
+                      checked={checked}
+                      onChange={() => {
+                        setObjetivos((prev) =>
+                          prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
+                        );
+                      }}
+                    />
+                    {opt}
+                  </label>
+                );
+              })}
+            </div>
+            {objetivos.includes("Outro") && (
+              <label className="mt-3 flex flex-col gap-1.5 text-sm font-medium">
+                Especifique o outro objetivo *
+                <input
+                  className="field-input"
+                  value={objetivoOutro}
+                  onChange={(e) => setObjetivoOutro(e.target.value)}
+                  placeholder="Descreva seu objetivo"
+                  maxLength={200}
+                />
+              </label>
+            )}
+          </fieldset>
         </section>
 
         {/* 3. Atividade Física */}
