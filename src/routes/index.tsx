@@ -86,7 +86,7 @@ function Index() {
   const [idadeManual, setIdadeManual] = useState("");
 
   const [objetivos, setObjetivos] = useState<string[]>([]);
-  const [objetivoOutro, setObjetivoOutro] = useState("");
+  
 
   const [treinaAtualmente, setTreinaAtualmente] = useState("");
   const [tempoParada, setTempoParada] = useState("");
@@ -147,8 +147,6 @@ function Index() {
     if (!idade || Number.isNaN(idadeNum) || idadeNum < MIN_AGE || idadeNum > MAX_AGE)
       errs.push(`A idade deve ser entre ${MIN_AGE} e ${MAX_AGE} anos.`);
     if (objetivos.length === 0) errs.push("Selecione pelo menos um objetivo com o treino.");
-    if (objetivos.includes("Outro") && !objetivoOutro.trim())
-      errs.push("Descreva o objetivo no campo 'Outro'.");
     if (problemaSaude === "Sim" && !qualProblema.trim())
       errs.push("Descreva qual problema de saúde você precisa destacar.");
     if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
@@ -416,18 +414,6 @@ function Index() {
                 );
               })}
             </div>
-            {objetivos.includes("Outro") && (
-              <label className="mt-3 flex flex-col gap-1.5 text-sm font-medium">
-                Especifique o outro objetivo *
-                <input
-                  className="field-input"
-                  value={objetivoOutro}
-                  onChange={(e) => setObjetivoOutro(e.target.value)}
-                  placeholder="Descreva seu objetivo"
-                  maxLength={200}
-                />
-              </label>
-            )}
           </fieldset>
         </section>
 
