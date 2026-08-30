@@ -121,7 +121,7 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento }: Pro
                       {opcao.split("—")[1]?.trim() ?? opcao}
                       {ehTrimestral && (
                         <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground">
-                          Economize {grupo.economiaTrimestral}
+                          trimestral: economize {grupo.economiaTrimestral}
                         </span>
                       )}
                     </span>
