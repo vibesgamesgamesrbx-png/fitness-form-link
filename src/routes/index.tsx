@@ -95,6 +95,9 @@ function Index() {
   const [alimentacao, setAlimentacao] = useState("");
   const [adicionais, setAdicionais] = useState("");
 
+  const [plano, setPlano] = useState("");
+  const [pagamento, setPagamento] = useState("");
+
   const [errors, setErrors] = useState<string[]>([]);
   const [whatsappUrl, setWhatsappUrl] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
