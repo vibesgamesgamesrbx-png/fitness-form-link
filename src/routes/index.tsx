@@ -95,6 +95,8 @@ function Index() {
 
   const [problemaSaude, setProblemaSaude] = useState("");
   const [qualProblema, setQualProblema] = useState("");
+  const [tomaMedicamento, setTomaMedicamento] = useState("");
+const [qualMedicamento, setQualMedicamento] = useState("");
 
   const [temFilhos, setTemFilhos] = useState("");
   const [quantosFilhos, setQuantosFilhos] = useState("");
@@ -521,6 +523,38 @@ function Index() {
                   onChange={(e) => setQualProblema(e.target.value)}
                   placeholder="Descreva o problema de saúde..."
                   maxLength={500}
+                />
+              </label>
+            )}
+                        <fieldset>
+              <legend className="mb-2 text-sm font-medium">
+                Você toma algum medicamento atualmente?
+              </legend>
+              <div className="grid grid-cols-2 gap-2">
+                {["Sim", "Não"].map((opt) => (
+                  <label key={opt} className="radio-card">
+                    <input
+                      type="radio"
+                      name="medicamento"
+                      className="radio-dot"
+                      checked={tomaMedicamento === opt}
+                      onChange={() => setTomaMedicamento(opt)}
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            {tomaMedicamento === "Sim" && (
+              <label className="flex flex-col gap-1.5 text-sm font-medium">
+                Se sim, qual medicamento?
+                <input
+                  className="field-input"
+                  value={qualMedicamento}
+                  onChange={(e) => setQualMedicamento(e.target.value)}
+                  placeholder="Informe o nome do medicamento..."
+                  maxLength={300}
                 />
               </label>
             )}
