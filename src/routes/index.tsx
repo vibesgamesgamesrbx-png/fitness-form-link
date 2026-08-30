@@ -592,6 +592,21 @@ function Index() {
           </label>
         </section>
 
+        {/* 9. Plano e Pagamento */}
+        <section className="card-outline p-5">
+          <span className="section-chip">
+            <Heart className="h-3.5 w-3.5" /> 9. Plano e Pagamento
+          </span>
+          <Planos
+            plano={plano}
+            setPlano={setPlano}
+            pagamento={pagamento}
+            setPagamento={setPagamento}
+          />
+        </section>
+
+
+
         {errors.length > 0 && (
           <div className="card-outline border-destructive/60 p-4" role="alert">
             <p className="text-sm font-semibold text-destructive">
