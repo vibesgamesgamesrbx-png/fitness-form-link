@@ -197,14 +197,29 @@ function Index() {
         titulo: "Informações adicionais",
         itens: [{ rotulo: "Observações", valor: na(adicionais) }],
       },
+      {
+        titulo: "Plano e pagamento",
+        itens: [
+          { rotulo: "Plano", valor: na(plano) },
+          { rotulo: "Pagamento", valor: na(pagamento) },
+        ],
+      },
     ];
+
+    const observacaoPagamento =
+      pagamento === "Pix"
+        ? "Pagamento via Pix Copia e Cola disponível na página da ficha."
+        : pagamento
+          ? "Aguardo o link de pagamento por cartão pelo WhatsApp."
+          : "";
 
     const message = [
       "🏋️ NOVA FICHA DE ANAMNESE",
       "",
       ...secoes.flatMap((s) => [
-        s.titulo.toUpperCase(),
+        s.titulo === "Plano e pagamento" ? "💳 PLANO E PAGAMENTO" : s.titulo.toUpperCase(),
         ...s.itens.map((i) => `${i.rotulo}: ${i.valor}`),
+        ...(s.titulo === "Plano e pagamento" && observacaoPagamento ? [observacaoPagamento] : []),
         "",
       ]),
       "Ficha preenchida pelo site. 💗",
