@@ -4,7 +4,7 @@ import { Check, Copy, CreditCard, QrCode, Sparkles } from "lucide-react";
 export const PIX_COPIA_E_COLA =
   "00020101021126360014br.gov.bcb.pix0114+55119401104475204000053039865802BR5917JULIANA D TRUGLIA6007CAJAMAR62070503***6304AF5E";
 
-export const FORMAS_PAGAMENTO = ["Pix", "Cartão de crédito", "Cartão de débito"] as const;
+export const FORMAS_PAGAMENTO = ["Pix", "Cartão de crédito",] as const;
 
 export const GRUPOS_PLANOS: {
   frequencia: string;
