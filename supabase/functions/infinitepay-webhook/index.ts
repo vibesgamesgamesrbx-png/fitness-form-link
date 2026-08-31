@@ -6,9 +6,7 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") {
     return new Response(JSON.stringify({ success: false, message: "Method not allowed" }), {
       status: 405,
@@ -22,7 +20,7 @@ Deno.serve(async (req) => {
     const transactionNsu = String(payload.transaction_nsu ?? "").trim();
     const invoiceSlug = String(payload.invoice_slug ?? "").trim();
     const amount = Number(payload.amount ?? 0);
-    const paidAmount = Number(payload.paid_amount ?? 0);
+    const paidAmount = Number(payload.paid_amount ?? payload.amount ?? 0);
 
     if (!orderNsu || !transactionNsu || !invoiceSlug || !Number.isFinite(amount) || amount <= 0) {
       return new Response(JSON.stringify({ success: false, message: "Payload inválido" }), {
@@ -50,7 +48,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // O valor recebido precisa corresponder ao pedido criado pelo nosso backend.
     if (Number(pagamento.valor_centavos) !== amount) {
       return new Response(JSON.stringify({ success: false, message: "Valor do pedido não confere" }), {
         status: 400,
@@ -58,7 +55,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Webhooks são idempotentes: receber o mesmo evento novamente não quebra o pedido.
     const { error: updateError } = await supabase
       .from("pagamentos")
       .update({
@@ -67,7 +63,7 @@ Deno.serve(async (req) => {
         invoice_slug: invoiceSlug,
         receipt_url: payload.receipt_url ?? null,
         capture_method: payload.capture_method ?? null,
-        paid_amount: Number.isFinite(paidAmount) ? paidAmount : null,
+        paid_amount_centavos: Number.isFinite(paidAmount) ? paidAmount : null,
         paid_at: new Date().toISOString(),
       })
       .eq("id", pagamento.id);
