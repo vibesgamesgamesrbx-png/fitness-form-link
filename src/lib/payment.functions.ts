@@ -92,7 +92,7 @@ export const consultarPagamento = createServerFn({ method: "GET" })
 
     const { data: pagamento, error } = await supabaseAdmin
       .from("pagamentos")
-      .select("order_nsu,nome,whatsapp,plano,status,valor_centavos")
+      .select("order_nsu,status")
       .eq("order_nsu", orderNsu)
       .maybeSingle();
 
@@ -100,8 +100,5 @@ export const consultarPagamento = createServerFn({ method: "GET" })
 
     return {
       status: pagamento.status as "pendente" | "pago" | "erro" | "cancelado" | "invalido",
-      nome: pagamento.nome,
-      whatsapp: pagamento.whatsapp,
-      plano: pagamento.plano,
     };
   });
