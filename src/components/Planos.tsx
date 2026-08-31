@@ -2,8 +2,6 @@ import { useState } from "react";
 import { Check, CreditCard, Loader2, QrCode, Sparkles } from "lucide-react";
 import { criarCheckoutInfinitePay } from "@/lib/payment.functions";
 
-export const FORMAS_PAGAMENTO = ["Pix", "Cartão de crédito"] as const;
-
 export const GRUPOS_PLANOS: {
   frequencia: string;
   valorSessao: string;
@@ -39,7 +37,7 @@ type Props = {
   whatsapp: string;
 };
 
-export default function Planos({ plano, setPlano, pagamento, setPagamento, nome, whatsapp }: Props) {
+export default function Planos({ plano, setPlano, setPagamento, nome, whatsapp }: Props) {
   const [pulando, setPulando] = useState("");
   const [pagando, setPagando] = useState(false);
   const [erro, setErro] = useState("");
@@ -62,6 +60,7 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento, nome,
     }
 
     setPagando(true);
+    setPagamento("Checkout InfinitePay");
     try {
       const result = await criarCheckoutInfinitePay({ data: { nome, whatsapp, plano } });
       localStorage.setItem(
@@ -97,7 +96,9 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento, nome,
                     aria-pressed={ativo}
                     className={[
                       "rounded-xl border px-3 py-3 text-left text-sm transition-all duration-200",
-                      ativo ? "border-primary bg-accent font-semibold text-accent-foreground shadow-sm" : "border-border bg-background text-foreground",
+                      ativo
+                        ? "border-primary bg-accent font-semibold text-accent-foreground shadow-sm"
+                        : "border-border bg-background text-foreground",
                       pulando === opcao ? "scale-[1.05]" : "scale-100",
                     ].join(" ")}
                   >
@@ -118,33 +119,12 @@ export default function Planos({ plano, setPlano, pagamento, setPagamento, nome,
         ))}
       </div>
 
-      <fieldset>
-        <legend className="mb-2 text-sm font-medium">Como você quer pagar? *</legend>
-        <p className="mb-3 text-xs text-muted-foreground">
-          O pagamento é processado com segurança pela InfinitePay. O checkout libera Pix e cartão conforme a configuração da conta da Juliana.
-        </p>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {FORMAS_PAGAMENTO.map((opt) => (
-            <label key={opt} className="radio-card">
-              <input
-                type="radio"
-                name="pagamento"
-                className="radio-dot"
-                checked={pagamento === opt}
-                onChange={() => setPagamento(opt)}
-              />
-              {opt}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
       <div className="rounded-xl border border-primary/30 bg-accent/40 p-4">
         <p className="flex items-center gap-2 text-sm font-semibold text-primary">
           <QrCode className="h-4 w-4" /> Pagamento seguro
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Você será levado ao checkout oficial da InfinitePay. O horário só poderá ser escolhido depois que o pagamento for confirmado automaticamente.
+          Você será levado ao checkout oficial da InfinitePay. Lá você poderá escolher Pix ou cartão de crédito. O horário só será liberado depois que o pagamento for confirmado automaticamente.
         </p>
         <button
           type="button"
