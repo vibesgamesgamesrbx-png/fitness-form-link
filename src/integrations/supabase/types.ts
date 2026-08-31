@@ -14,16 +14,146 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      agenda_bloqueios: {
+        Row: {
+          created_at: string
+          data: string
+          horario: string | null
+          id: string
+          motivo: string | null
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          horario?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          horario?: string | null
+          id?: string
+          motivo?: string | null
+        }
+        Relationships: []
+      }
+      agenda_config: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dia_semana: number
+          duracao_min: number
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          intervalo_min: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dia_semana: number
+          duracao_min?: number
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          intervalo_min?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dia_semana?: number
+          duracao_min?: number
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          intervalo_min?: number
+        }
+        Relationships: []
+      }
+      agendamentos: {
+        Row: {
+          created_at: string
+          data: string
+          forma_pagamento: string | null
+          horario: string
+          id: string
+          nome: string
+          plano: string
+          status_agendamento: string
+          status_pagamento: string
+          whatsapp: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          forma_pagamento?: string | null
+          horario: string
+          id?: string
+          nome: string
+          plano: string
+          status_agendamento?: string
+          status_pagamento?: string
+          whatsapp: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          forma_pagamento?: string | null
+          horario?: string
+          id?: string
+          nome?: string
+          plano?: string
+          status_agendamento?: string
+          status_pagamento?: string
+          whatsapp?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_admin: { Args: never; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      horarios_ocupados: {
+        Args: never
+        Returns: {
+          data: string
+          horario: string
+        }[]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +280,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin"],
+    },
   },
 } as const
