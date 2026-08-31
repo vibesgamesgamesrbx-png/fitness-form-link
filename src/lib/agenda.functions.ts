@@ -44,6 +44,7 @@ export type NovoAgendamento = {
   horario: string;
   plano: string;
   formaPagamento: string;
+  orderNsu: string;
 };
 
 export type ResultadoAgendamento =
@@ -57,13 +58,32 @@ export const criarAgendamento = createServerFn({ method: "POST" })
     const whatsapp = String(data.whatsapp ?? "").replace(/\D/g, "").slice(0, 13);
     const plano = String(data.plano ?? "").trim().slice(0, 120);
     const formaPagamento = String(data.formaPagamento ?? "").trim().slice(0, 60);
+    const orderNsu = String(data.orderNsu ?? "").trim();
 
-    if (!nome || whatsapp.length < 10 || !plano)
-      return { ok: false, erro: "Dados incompletos para o agendamento." };
+    if (!nome || whatsapp.length < 10 || !plano || !orderNsu)
+      return { ok: false, erro: "Pagamento confirmado e dados do agendamento são necessários." };
     if (!/^\d{4}-\d{2}-\d{2}$/.test(data.data) || !/^\d{2}:\d{2}$/.test(data.horario))
       return { ok: false, erro: "Data ou horário inválidos." };
 
-    // O horário precisa existir na agenda e estar livre
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Nunca confiamos em um botão do cliente dizendo que pagou.
+    // O status 'pago' só é escrito pelo webhook da InfinitePay.
+    const { data: pagamento, error: pagamentoError } = await supabaseAdmin
+      .from("pagamentos")
+      .select("order_nsu,nome,whatsapp,plano,status")
+      .eq("order_nsu", orderNsu)
+      .maybeSingle();
+
+    if (pagamentoError || !pagamento || pagamento.status !== "pago") {
+      return { ok: false, erro: "Seu pagamento ainda não foi confirmado. Aguarde alguns segundos e tente novamente." };
+    }
+
+    if (pagamento.plano !== plano) {
+      return { ok: false, erro: "O plano não corresponde ao pagamento confirmado." };
+    }
+
+    // O horário precisa existir na agenda e estar livre.
     const agenda = await listarAgenda();
     const dia = agenda.find((d) => d.data === data.data);
     const slot = dia?.slots.find((s) => s.horario === data.horario);
@@ -75,8 +95,7 @@ export const criarAgendamento = createServerFn({ method: "POST" })
         erro: "Esse horário acabou de ser reservado. Escolha outro horário disponível.",
       };
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: inserido, error } = await supabaseAdmin
+    const { data: inserido, error } = await (supabaseAdmin as any)
       .from("agendamentos")
       .insert({
         nome,
@@ -85,6 +104,9 @@ export const criarAgendamento = createServerFn({ method: "POST" })
         horario: data.horario,
         plano,
         forma_pagamento: formaPagamento,
+        order_nsu: orderNsu,
+        status_pagamento: "confirmado",
+        status_agendamento: "confirmado",
       })
       .select("id")
       .single();

@@ -12,8 +12,7 @@ import {
   Send,
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
-import Planos, { LINKS_CARTAO } from "@/components/Planos";
-
+import Planos from "@/components/Planos";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -86,7 +85,6 @@ function Index() {
   const [idadeManual, setIdadeManual] = useState("");
 
   const [objetivos, setObjetivos] = useState<string[]>([]);
-  
 
   const [treinaAtualmente, setTreinaAtualmente] = useState("");
   const [tempoParada, setTempoParada] = useState("");
@@ -96,7 +94,7 @@ function Index() {
   const [problemaSaude, setProblemaSaude] = useState("");
   const [qualProblema, setQualProblema] = useState("");
   const [tomaMedicamento, setTomaMedicamento] = useState("");
-const [qualMedicamento, setQualMedicamento] = useState("");
+  const [qualMedicamento, setQualMedicamento] = useState("");
 
   const [temFilhos, setTemFilhos] = useState("");
   const [quantosFilhos, setQuantosFilhos] = useState("");
@@ -112,7 +110,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
   const [whatsappUrl, setWhatsappUrl] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
   const [enviado, setEnviado] = useState(false);
-
 
   const idadeAuto = useMemo(() => calcAge(nascimento), [nascimento]);
   const idade = idadeAuto !== null ? String(idadeAuto) : idadeManual;
@@ -215,19 +212,12 @@ const [qualMedicamento, setQualMedicamento] = useState("");
         itens: [
           { rotulo: "Plano", valor: na(plano) },
           { rotulo: "Pagamento", valor: na(pagamento) },
-          ...(pagamento?.startsWith("Cartão") && LINKS_CARTAO[plano]
-            ? [{ rotulo: "Link de pagamento", valor: LINKS_CARTAO[plano] }]
-            : []),
         ],
       },
     ];
 
     const observacaoPagamento =
-      pagamento === "Pix"
-        ? "Pagamento via Pix Copia e Cola disponível na página da ficha."
-        : pagamento?.startsWith("Cartão") && LINKS_CARTAO[plano]
-          ? `Pague por cartão aqui: ${LINKS_CARTAO[plano]}`
-          : "";
+      "O pagamento é processado pelo Checkout Integrado da InfinitePay. A confirmação é automática.";
 
     const message = [
       "🏋️ NOVA FICHA DE ANAMNESE",
@@ -235,7 +225,7 @@ const [qualMedicamento, setQualMedicamento] = useState("");
       ...secoes.flatMap((s) => [
         s.titulo === "Plano e pagamento" ? "💳 PLANO E PAGAMENTO" : s.titulo.toUpperCase(),
         ...s.itens.map((i) => `${i.rotulo}: ${i.valor}`),
-        ...(s.titulo === "Plano e pagamento" && observacaoPagamento ? [observacaoPagamento] : []),
+        ...(s.titulo === "Plano e pagamento" ? [observacaoPagamento] : []),
         "",
       ]),
       "Ficha preenchida pelo site. 💗",
@@ -244,7 +234,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
     const url = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`;
     setWhatsappUrl(url);
 
-    // Gera a ficha como IMAGEM (PNG) bonitinha
     let blob: Blob | null = null;
     try {
       blob = await gerarImagemFicha(nome, secoes);
@@ -260,7 +249,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
         type: "image/png",
       });
 
-      // Compartilha a IMAGEM direto para o WhatsApp (celular)
       if (
         typeof navigator !== "undefined" &&
         navigator.canShare?.({ files: [file] }) &&
@@ -277,7 +265,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
           // usuária cancelou ou não deu — segue para o WhatsApp com o texto
         }
       } else {
-        // Computador: baixa a imagem para anexar na conversa que vai abrir
         const dl = document.createElement("a");
         dl.href = objectUrl;
         dl.download = file.name;
@@ -297,10 +284,8 @@ const [qualMedicamento, setQualMedicamento] = useState("");
     anchor.remove();
   };
 
-
   return (
     <div className="min-h-screen bg-background pb-16">
-      {/* Header */}
       <header className="px-5 pt-10 pb-6 text-center">
         <div className="mx-auto flex max-w-xl items-center justify-center gap-3">
           <Heart className="h-5 w-5 text-rosegold" fill="currentColor" />
@@ -327,7 +312,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
       </header>
 
       <form onSubmit={handleSubmit} className="mx-auto flex max-w-xl flex-col gap-5 px-4">
-        {/* 1. Dados Pessoais */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <User className="h-3.5 w-3.5" /> 1. Dados Pessoais
@@ -344,7 +328,7 @@ const [qualMedicamento, setQualMedicamento] = useState("");
                 autoComplete="name"
               />
             </label>
-                      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
               <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
                 Data de nascimento *
                 <input
@@ -359,17 +343,17 @@ const [qualMedicamento, setQualMedicamento] = useState("");
               <label className="flex w-24 shrink-0 flex-col gap-1.5 text-sm font-medium">
                 Idade *
                 <input
+                  type="number"
                   className="field-input"
                   value={idade}
                   onChange={(e) => handleIdade(e.target.value)}
-                  inputMode="numeric"
-                  placeholder="00"
+                  min={MIN_AGE}
+                  max={MAX_AGE}
                 />
               </label>
             </div>
-
             <label className="flex flex-col gap-1.5 text-sm font-medium">
-              Seu WhatsApp (com DDD) *
+              WhatsApp (com DDD) *
               <input
                 className="field-input"
                 value={whatsappCliente}
@@ -382,45 +366,28 @@ const [qualMedicamento, setQualMedicamento] = useState("");
           </div>
         </section>
 
-        {/* 2. Objetivo */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Target className="h-3.5 w-3.5" /> 2. Objetivo
           </span>
-          <fieldset className="mt-4">
-            <legend className="mb-2 text-sm font-medium">
-              Qual o seu principal objetivo com o treino? *
-            </legend>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {OBJETIVOS_OPCOES.map((opt) => {
-                const checked = objetivos.includes(opt);
-                return (
-                  <label
-                    key={opt}
-                    className={[
-                      "radio-card",
-                      checked ? "border-primary bg-accent font-semibold text-accent-foreground" : "",
-                    ].join(" ")}
-                  >
-                    <input
-                      type="checkbox"
-                      className="radio-dot"
-                      checked={checked}
-                      onChange={() => {
-                        setObjetivos((prev) =>
-                          prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
-                        );
-                      }}
-                    />
-                    {opt}
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
+          <div className="mt-4 grid grid-cols-1 gap-2">
+            {OBJETIVOS_OPCOES.map((opt) => (
+              <label key={opt} className="radio-card">
+                <input
+                  type="checkbox"
+                  checked={objetivos.includes(opt)}
+                  onChange={() =>
+                    setObjetivos((prev) =>
+                      prev.includes(opt) ? prev.filter((item) => item !== opt) : [...prev, opt],
+                    )
+                  }
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
         </section>
 
-        {/* 3. Atividade Física */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Dumbbell className="h-3.5 w-3.5" /> 3. Atividade Física
@@ -489,7 +456,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
           </div>
         </section>
 
-        {/* 4. Saúde */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Heart className="h-3.5 w-3.5" /> 4. Saúde
@@ -526,7 +492,7 @@ const [qualMedicamento, setQualMedicamento] = useState("");
                 />
               </label>
             )}
-                        <fieldset>
+            <fieldset>
               <legend className="mb-2 text-sm font-medium">
                 Você toma algum medicamento atualmente?
               </legend>
@@ -545,7 +511,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
                 ))}
               </div>
             </fieldset>
-
             {tomaMedicamento === "Sim" && (
               <label className="flex flex-col gap-1.5 text-sm font-medium">
                 Se sim, qual medicamento?
@@ -561,7 +526,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
           </div>
         </section>
 
-        {/* 5. Filhos */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Baby className="h-3.5 w-3.5" /> 5. Filhos
@@ -586,49 +550,46 @@ const [qualMedicamento, setQualMedicamento] = useState("");
             </fieldset>
             {temFilhos === "Sim" && (
               <label className="flex flex-col gap-1.5 text-sm font-medium">
-                Quantos? *
+                Quantos filhos? *
                 <input
-                  className="field-input w-28"
+                  type="number"
+                  className="field-input"
                   value={quantosFilhos}
-                  onChange={(e) => {
-                    const d = e.target.value.replace(/\D/g, "").slice(0, 2);
-                    setQuantosFilhos(d === "" ? "" : String(Math.min(Number(d), 20)));
-                  }}
+                  onChange={(e) => setQuantosFilhos(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                  min={1}
+                  max={20}
                   inputMode="numeric"
-                  placeholder="0"
                 />
               </label>
             )}
           </div>
         </section>
 
-        {/* 6. Sono */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <MoonStar className="h-3.5 w-3.5" /> 6. Sono
           </span>
-          <fieldset className="mt-4">
-            <legend className="mb-2 text-sm font-medium">
-              Como você avalia a qualidade do seu sono?
-            </legend>
-            <div className="flex flex-col gap-2">
-              {["Durmo bem", "Durmo razoavelmente", "Tenho dificuldades para dormir"].map((opt) => (
-                <label key={opt} className="radio-card">
-                  <input
-                    type="radio"
-                    name="sono"
-                    className="radio-dot"
-                    checked={sono === opt}
-                    onChange={() => setSono(opt)}
-                  />
-                  {opt}
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          <div className="mt-4 flex flex-col gap-4">
+            <fieldset>
+              <legend className="mb-2 text-sm font-medium">Como você avalia seu sono?</legend>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {["Bom", "Regular", "Ruim"].map((opt) => (
+                  <label key={opt} className="radio-card">
+                    <input
+                      type="radio"
+                      name="sono"
+                      className="radio-dot"
+                      checked={sono === opt}
+                      onChange={() => setSono(opt)}
+                    />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
         </section>
 
-        {/* 7. Alimentação */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Salad className="h-3.5 w-3.5" /> 7. Alimentação
@@ -645,7 +606,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
           </label>
         </section>
 
-        {/* 8. Informações Adicionais */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <MessageCircleHeart className="h-3.5 w-3.5" /> 8. Informações Adicionais
@@ -662,7 +622,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
           </label>
         </section>
 
-        {/* 9. Plano e Pagamento */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Heart className="h-3.5 w-3.5" /> 9. Plano e Pagamento
@@ -672,10 +631,10 @@ const [qualMedicamento, setQualMedicamento] = useState("");
             setPlano={setPlano}
             pagamento={pagamento}
             setPagamento={setPagamento}
+            nome={nome}
+            whatsapp={whatsappCliente}
           />
         </section>
-
-
 
         {errors.length > 0 && (
           <div className="card-outline border-destructive/60 p-4" role="alert">
@@ -699,7 +658,7 @@ const [qualMedicamento, setQualMedicamento] = useState("");
         </button>
         <p className="text-center text-xs text-muted-foreground">
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
-          em enviar no WhatsApp. Nenhum dado fica salvo neste site.
+          em enviar no WhatsApp.
         </p>
         {imagemUrl && (
           <div className="card-outline flex flex-col items-center gap-3 p-4">
@@ -732,7 +691,6 @@ const [qualMedicamento, setQualMedicamento] = useState("");
               : "Abrir o WhatsApp"}
           </a>
         )}
-
       </form>
 
       <footer className="mt-10 px-5 text-center">

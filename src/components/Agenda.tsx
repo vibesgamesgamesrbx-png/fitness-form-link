@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { CalendarHeart, Clock, Check, Loader2, RefreshCw } from "lucide-react";
+import { CalendarHeart, Clock, Check, Loader2, RefreshCw, MessageCircle } from "lucide-react";
 import { criarAgendamento, listarAgenda } from "@/lib/agenda.functions";
+import { consultarPagamento } from "@/lib/payment.functions";
 import { formatarData, type DiaAgenda } from "@/lib/agenda-slots";
 
 type Props = {
@@ -8,11 +9,13 @@ type Props = {
   whatsapp: string;
   plano: string;
   pagamento: string;
+  orderNsu: string;
   onConfirmado: (data: string, horario: string) => void;
 };
 
-export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado }: Props) {
-  const [pagou, setPagou] = useState(false);
+export default function Agenda({ nome, whatsapp, plano, pagamento, orderNsu, onConfirmado }: Props) {
+  const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
+  const [verificandoPagamento, setVerificandoPagamento] = useState(true);
   const [dias, setDias] = useState<DiaAgenda[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [diaSel, setDiaSel] = useState("");
@@ -20,8 +23,33 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
+  const [confirmacao, setConfirmacao] = useState<{ data: string; horario: string } | null>(null);
+
+  const verificarPagamento = useCallback(async () => {
+    if (!orderNsu) {
+      setVerificandoPagamento(false);
+      setErro("Não encontramos o identificador do seu pagamento.");
+      return false;
+    }
+
+    try {
+      const resultado = await consultarPagamento({ data: { orderNsu } });
+      const pago = resultado.status === "pago";
+      setPagamentoConfirmado(pago);
+      if (resultado.status === "erro" || resultado.status === "cancelado") {
+        setErro("O pagamento não foi aprovado. Se precisar, volte e tente novamente.");
+      }
+      return pago;
+    } catch {
+      setErro("Não foi possível confirmar o pagamento agora. Tentaremos novamente.");
+      return false;
+    } finally {
+      setVerificandoPagamento(false);
+    }
+  }, [orderNsu]);
 
   const carregar = useCallback(async () => {
+    if (!pagamentoConfirmado) return;
     setCarregando(true);
     try {
       const lista = await listarAgenda();
@@ -31,22 +59,48 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [pagamentoConfirmado]);
 
   useEffect(() => {
-    if (pagou && dias.length === 0) void carregar();
-  }, [pagou, dias.length, carregar]);
+    let ativo = true;
+    let timer: number | undefined;
+
+    const checar = async () => {
+      const pago = await verificarPagamento();
+      if (!ativo) return;
+      if (!pago) timer = window.setTimeout(checar, 3000);
+    };
+
+    void checar();
+    return () => {
+      ativo = false;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [verificarPagamento]);
+
+  useEffect(() => {
+    if (pagamentoConfirmado) void carregar();
+  }, [pagamentoConfirmado, carregar]);
 
   const confirmar = async () => {
-    if (!diaSel || !horaSel) return;
+    if (!diaSel || !horaSel || !pagamentoConfirmado) return;
     setSalvando(true);
     setErro("");
     try {
       const res = await criarAgendamento({
-        data: { nome, whatsapp, data: diaSel, horario: horaSel, plano, formaPagamento: pagamento },
+        data: {
+          nome,
+          whatsapp,
+          data: diaSel,
+          horario: horaSel,
+          plano,
+          formaPagamento: pagamento,
+          orderNsu,
+        },
       });
       if (res.ok) {
         setConfirmado(true);
+        setConfirmacao({ data: diaSel, horario: horaSel });
         onConfirmado(diaSel, horaSel);
       } else {
         setErro(res.erro);
@@ -60,35 +114,54 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
     }
   };
 
-  if (confirmado) {
+  const abrirWhatsApp = () => {
+    if (!confirmacao) return;
+    const mensagem = [
+      "🏋️ AGENDAMENTO CONFIRMADO",
+      "",
+      `Nome: ${nome}`,
+      `Plano: ${plano}`,
+      `Data: ${formatarData(confirmacao.data)}`,
+      `Horário: ${confirmacao.horario}`,
+      "",
+      "Pagamento confirmado automaticamente pela InfinitePay. 💗",
+    ].join("\n");
+    window.open(
+      `https://wa.me/5511940110447?text=${encodeURIComponent(mensagem)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
+
+  if (confirmado && confirmacao) {
     return (
       <div className="rounded-2xl border border-whatsapp/50 bg-accent/40 p-5 text-center">
         <p className="font-display text-2xl italic text-primary">Agendamento confirmado!</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Seu horário foi reservado com sucesso.
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">Seu horário foi reservado com sucesso.</p>
         <p className="mt-3 text-sm font-semibold">
-          {formatarData(diaSel)} às {horaSel}
+          {formatarData(confirmacao.data)} às {confirmacao.horario}
         </p>
         <p className="text-sm text-muted-foreground">{plano}</p>
+        <button
+          type="button"
+          onClick={abrirWhatsApp}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-whatsapp px-4 py-3 text-sm font-bold uppercase tracking-wide text-whatsapp-foreground"
+        >
+          <MessageCircle className="h-4 w-4" /> Avisar a Juliana pelo WhatsApp
+        </button>
       </div>
     );
   }
 
-  if (!pagou) {
+  if (verificandoPagamento || !pagamentoConfirmado) {
     return (
-      <div className="mt-4 rounded-2xl border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">
-          Depois de realizar o pagamento do plano escolhido, toque abaixo para escolher o seu
-          horário. A Juliana confirma o pagamento na área dela.
+      <div className="mt-4 rounded-2xl border border-primary/30 bg-accent/40 p-5 text-center">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+        <p className="mt-3 font-display text-xl italic text-primary">Confirmando seu pagamento...</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Assim que a InfinitePay confirmar o pagamento, os horários disponíveis aparecerão aqui automaticamente.
         </p>
-        <button
-          type="button"
-          onClick={() => setPagou(true)}
-          className="mt-3 w-full rounded-xl bg-primary px-4 py-3 text-sm font-bold uppercase tracking-wide text-primary-foreground transition-transform active:scale-[0.98]"
-        >
-          Já realizei o pagamento — escolher horário
-        </button>
+        {erro && <p className="mt-3 text-sm font-semibold text-destructive">{erro}</p>}
       </div>
     );
   }
@@ -96,10 +169,8 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
   return (
     <div className="mt-4 flex flex-col gap-4">
       <div>
-        <p className="font-display text-2xl italic text-primary">Escolha seu horário</p>
-        <p className="text-sm text-muted-foreground">
-          Selecione o melhor dia e horário para o seu atendimento.
-        </p>
+        <p className="font-display text-2xl italic text-primary">Pagamento confirmado! 💗</p>
+        <p className="text-sm text-muted-foreground">Agora escolha o melhor dia e horário para o seu atendimento.</p>
       </div>
 
       {carregando && (
@@ -112,7 +183,6 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
         <p className="text-sm text-muted-foreground">Nenhum horário disponível no momento.</p>
       )}
 
-      {/* Dias */}
       {dias.length > 0 && (
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {dias.map((d) => {
@@ -142,7 +212,6 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
         </div>
       )}
 
-      {/* Horários */}
       {diaSel && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {dias
@@ -195,7 +264,7 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-whatsapp px-4 py-4 text-sm font-bold uppercase tracking-wide text-whatsapp-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
           >
             {salvando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Confirmar agendamento
+            {salvando ? "Reservando..." : "Confirmar agendamento"}
           </button>
         </div>
       )}
