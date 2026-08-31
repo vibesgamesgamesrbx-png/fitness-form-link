@@ -27,18 +27,18 @@ function PagamentoConcluido() {
       try {
         const params = new URLSearchParams(window.location.search);
         const orderNsu = params.get("order_nsu")?.trim() || "";
-
         let pendente: Partial<ClientePagamento> = {};
+
         try {
           const salvo = window.localStorage.getItem("juliana_pagamento_pendente");
           if (salvo) pendente = JSON.parse(salvo) as Partial<ClientePagamento>;
         } catch {
-          // Ignora dados locais inválidos; a consulta do pagamento é a fonte confiável.
+          // Ignora dados locais inválidos.
         }
 
         const id = orderNsu || pendente.orderNsu || "";
-        if (!id) {
-          if (ativo) setErro("Não encontramos o pedido do pagamento. Volte ao formulário e tente novamente.");
+        if (!id || !pendente.nome || !pendente.whatsapp || !pendente.plano) {
+          if (ativo) setErro("Não encontramos os dados deste pagamento. Volte ao formulário e tente novamente.");
           return;
         }
 
@@ -52,9 +52,9 @@ function PagamentoConcluido() {
 
         setCliente({
           orderNsu: id,
-          nome: resultado.nome || pendente.nome || "",
-          whatsapp: resultado.whatsapp || pendente.whatsapp || "",
-          plano: resultado.plano || pendente.plano || "",
+          nome: pendente.nome,
+          whatsapp: pendente.whatsapp,
+          plano: pendente.plano,
         });
       } catch {
         if (ativo) setErro("Não foi possível carregar os dados do pagamento agora.");
