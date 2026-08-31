@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+const INFINITEPAY_HANDLE = "juliana-doro-truglia";
+
 const PLANOS_VALORES: Record<string, number> = {
   "2x na semana — Mensal R$ 960": 96000,
   "2x na semana — Trimestral R$ 2.640": 264000,
@@ -36,8 +38,8 @@ export const criarCheckoutInfinitePay = createServerFn({ method: "POST" })
 
     const orderNsu = crypto.randomUUID();
     const appUrl = env("APP_URL").replace(/\/$/, "");
-    const handle = env("INFINITEPAY_HANDLE").replace(/^\$/, "");
-    const webhookUrl = env("INFINITEPAY_WEBHOOK_URL");
+    const supabaseUrl = env("SUPABASE_URL").replace(/\/$/, "");
+    const webhookUrl = `${supabaseUrl}/functions/v1/infinitepay-webhook`;
 
     const { error: insertError } = await supabaseAdmin.from("pagamentos").insert({
       order_nsu: orderNsu,
@@ -54,7 +56,7 @@ export const criarCheckoutInfinitePay = createServerFn({ method: "POST" })
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        handle,
+        handle: INFINITEPAY_HANDLE,
         order_nsu: orderNsu,
         redirect_url: `${appUrl}/pagamento-concluido`,
         webhook_url: webhookUrl,
