@@ -4,6 +4,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { montarAgenda, type AgendaConfig, type DiaAgenda } from "@/lib/agenda-slots";
 
+const JULIANA_ADMIN_EMAIL = "juliana.doro@hotmail.com";
+
 function clientePublico() {
   const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
   return createClient<Database>(process.env["SUPABASE_URL"]!, key, {
@@ -83,25 +85,23 @@ export const criarAgendamento = createServerFn({ method: "POST" })
 
 /* ---------- Área da Juliana (somente administradora) ---------- */
 
-async function garantirAdmin(context: { supabase: any; userId: string }) {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  if (!data) throw new Error("Acesso restrito.");
+function isJulianaAdmin(context: { claims?: Record<string, unknown> }) {
+  const email = String(context.claims?.email ?? "").trim().toLowerCase();
+  return email === JULIANA_ADMIN_EMAIL;
+}
+
+async function garantirAdmin(context: { supabase: any; userId: string; claims?: Record<string, unknown> }) {
+  if (!isJulianaAdmin(context)) throw new Error("Acesso restrito.");
 }
 
 export const souAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const { data } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "admin" });
-  return Boolean(data);
-});
-
-export const ativarAdmin = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const { data, error } = await context.supabase.rpc("claim_admin");
-  if (error) return false;
-  return Boolean(data);
+  return isJulianaAdmin(context);
 });
 
 export const listarAgendamentosAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
   await garantirAdmin(context as never);
-  const { data, error } = await context.supabase.from("agendamentos").select("*").order("data", { ascending: true }).order("horario", { ascending: true });
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await (supabaseAdmin as any).from("agendamentos").select("*").order("data", { ascending: true }).order("horario", { ascending: true });
   if (error) throw new Error(error.message);
   return data ?? [];
 });
@@ -155,7 +155,8 @@ export const atualizarAgendamento = createServerFn({ method: "POST" })
     const patch: { status_pagamento?: string; status_agendamento?: string } = {};
     if (data.status_pagamento) patch.status_pagamento = data.status_pagamento;
     if (data.status_agendamento) patch.status_agendamento = data.status_agendamento;
-    const { error } = await context.supabase.from("agendamentos").update(patch).eq("id", data.id);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).from("agendamentos").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
