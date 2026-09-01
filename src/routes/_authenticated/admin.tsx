@@ -79,19 +79,31 @@ function AdminPage() {
     const chave = `${diaSemana}|${horario}`;
     if (ocupadosSet.has(chave)) return;
 
+    const existente = bloqueiosRecorrentes.find((b) => `${b.dia_semana}|${b.horario.slice(0, 5)}` === chave);
     setSalvando(chave); setErro(""); setSucesso("");
+
+    // Atualiza a interface imediatamente: bloqueado = cinza, liberado = verde.
+    if (existente) {
+      setBloqueiosRecorrentes((atual) => atual.filter((b) => b.id !== existente.id));
+    } else {
+      setBloqueiosRecorrentes((atual) => [...atual, { id: `temp-${chave}`, dia_semana: diaSemana, horario }]);
+    }
+
     try {
-      const existente = bloqueiosRecorrentes.find((b) => `${b.dia_semana}|${b.horario.slice(0, 5)}` === chave);
       if (existente) {
         await removerBloqueioRecorrente({ data: { id: existente.id } });
-        setBloqueiosRecorrentes((atual) => atual.filter((b) => b.id !== existente.id));
         setSucesso(`${DIAS.find((d) => d.numero === diaSemana)?.nome} às ${horario} liberado.`);
       } else {
         const novo = await criarBloqueioRecorrente({ data: { dia_semana: diaSemana, horario } });
-        setBloqueiosRecorrentes((atual) => [...atual, novo]);
+        setBloqueiosRecorrentes((atual) => atual.map((b) => b.id === `temp-${chave}` ? novo : b));
         setSucesso(`${DIAS.find((d) => d.numero === diaSemana)?.nome} às ${horario} bloqueado semanalmente.`);
       }
     } catch (e) {
+      // Desfaz a alteração visual se o servidor recusar a operação.
+      setBloqueiosRecorrentes((atual) => {
+        if (existente) return [...atual, existente];
+        return atual.filter((b) => b.id !== `temp-${chave}`);
+      });
       setErro(e instanceof Error ? e.message : "Não foi possível alterar esse horário.");
     } finally {
       setSalvando("");
