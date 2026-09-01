@@ -28,6 +28,13 @@ export const GRUPOS_PLANOS: {
   },
 ];
 
+/**
+ * Compatibilidade temporária com o fluxo antigo da ficha.
+ * O checkout atual é feito por Pagamento.tsx/InfinitePay e não usa links
+ * fixos por plano. O objeto vazio impede que o fluxo legado gere links antigos.
+ */
+export const LINKS_CARTAO: Record<string, string> = {};
+
 type Props = {
   plano: string;
   setPlano: (v: string) => void;
