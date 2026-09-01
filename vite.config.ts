@@ -3,15 +3,11 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
+    // This application contains runtime-only routes such as the payment
+    // confirmation page and authenticated admin area. Let the server render
+    // routes on demand instead of crawling/prerendering them during build.
     prerender: {
-      enabled: true,
-      autoSubfolderIndex: true,
-      autoStaticPathsDiscovery: true,
-      crawlLinks: true,
-      failOnError: true,
-      // These routes depend on runtime state/query parameters and must be rendered on demand.
-      filter: ({ path }: { path: string }) =>
-        path !== "/admin" && path !== "/pagamento-confirmado",
+      enabled: false,
     },
   },
 });
