@@ -4,7 +4,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { montarAgenda, type AgendaConfig, type BloqueioRecorrente, type DiaAgenda } from "@/lib/agenda-slots";
 
-const JULIANA_ADMIN_EMAIL = "juliana.doro@hotmail.com";
 const SUPABASE_URL = "https://vwceklxxklkftqzxnbkb.supabase.co";
 
 function clientePublico() {
@@ -72,18 +71,30 @@ export const criarAgendamento = createServerFn({ method: "POST" })
     return { ok: true, id: inserido.id };
   });
 
-function isJulianaAdmin(context: { claims?: Record<string, unknown> }) { return String(context.claims?.email ?? "").trim().toLowerCase() === JULIANA_ADMIN_EMAIL; }
-async function garantirAdmin(context: { supabase: any; userId: string; claims?: Record<string, unknown> }) { if (!isJulianaAdmin(context)) throw new Error("Acesso restrito."); }
+// The Edge Function is the authoritative admin check. Do not depend on the
+// presence of the email claim in the local JWT payload, because Supabase can
+// issue tokens whose claims differ between auth configurations.
+async function garantirAdmin(context: { authorization?: string }) {
+  await chamarAdminEdge(context.authorization, "fichas");
+}
 
-export const souAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => isJulianaAdmin(context));
-export const listarAgendamentosAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => { await garantirAdmin(context as never); return (await chamarAdminEdge((context as any).authorization, "agendamentos")) ?? []; });
+export const souAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
+  try {
+    await chamarAdminEdge((context as any).authorization, "fichas");
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+export const listarAgendamentosAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => { await garantirAdmin(context as any); return (await chamarAdminEdge((context as any).authorization, "agendamentos")) ?? []; });
 
 export type BloqueioAdmin = { id: string; data: string; horario: string | null; motivo: string | null };
-export const listarBloqueiosAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => { await garantirAdmin(context as never); return (await chamarAdminEdge((context as any).authorization, "bloqueios")) ?? []; });
+export const listarBloqueiosAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => { await garantirAdmin(context as any); return (await chamarAdminEdge((context as any).authorization, "bloqueios")) ?? []; });
 export type BloqueioRecorrenteAdmin = { id: string; dia_semana: number; horario: string };
-export const listarBloqueiosRecorrentesAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => { await garantirAdmin(context as never); return (await chamarAdminEdge((context as any).authorization, "bloqueios-recorrentes")) ?? []; });
-export const criarBloqueio = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { data: string; horario?: string | null; motivo?: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as never); if (!/^\d{4}-\d{2}-\d{2}$/.test(data.data)) throw new Error("Data inválida."); return chamarAdminEdge((context as any).authorization, "criar-bloqueio", data); });
-export const criarBloqueioRecorrente = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { dia_semana: number; horario: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as never); if (!Number.isInteger(data.dia_semana) || data.dia_semana < 1 || data.dia_semana > 5 || !/^(0[6-9]|1\d|2[0-4]):00$/.test(data.horario)) throw new Error("Dados inválidos."); return chamarAdminEdge((context as any).authorization, "criar-bloqueio-recorrente", data); });
-export const removerBloqueio = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { id: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as never); await chamarAdminEdge((context as any).authorization, "remover-bloqueio", data); return { ok: true }; });
-export const removerBloqueioRecorrente = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { id: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as never); await chamarAdminEdge((context as any).authorization, "remover-bloqueio-recorrente", data); return { ok: true }; });
-export const atualizarAgendamento = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { id: string; status_pagamento?: string; status_agendamento?: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as never); await chamarAdminEdge((context as any).authorization, "atualizar-agendamento", data); return { ok: true }; });
+export const listarBloqueiosRecorrentesAdmin = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => { await garantirAdmin(context as any); return (await chamarAdminEdge((context as any).authorization, "bloqueios-recorrentes")) ?? []; });
+export const criarBloqueio = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { data: string; horario?: string | null; motivo?: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as any); if (!/^\d{4}-\d{2}-\d{2}$/.test(data.data)) throw new Error("Data inválida."); return chamarAdminEdge((context as any).authorization, "criar-bloqueio", data); });
+export const criarBloqueioRecorrente = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { dia_semana: number; horario: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as any); if (!Number.isInteger(data.dia_semana) || data.dia_semana < 1 || data.dia_semana > 5 || !/^(0[6-9]|1\d|2[0-4]):00$/.test(data.horario)) throw new Error("Dados inválidos."); return chamarAdminEdge((context as any).authorization, "criar-bloqueio-recorrente", data); });
+export const removerBloqueio = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { id: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as any); await chamarAdminEdge((context as any).authorization, "remover-bloqueio", data); return { ok: true }; });
+export const removerBloqueioRecorrente = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { id: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as any); await chamarAdminEdge((context as any).authorization, "remover-bloqueio-recorrente", data); return { ok: true }; });
+export const atualizarAgendamento = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).inputValidator((input: { id: string; status_pagamento?: string; status_agendamento?: string }) => input).handler(async ({ context, data }) => { await garantirAdmin(context as any); await chamarAdminEdge((context as any).authorization, "atualizar-agendamento", data); return { ok: true }; });
