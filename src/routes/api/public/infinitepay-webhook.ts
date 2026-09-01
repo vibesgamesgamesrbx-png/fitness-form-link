@@ -1,10 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-/**
- * Webhook da InfinitePay: confirma pagamentos usando o order_nsu gerado pelo checkout.
- * O token é opcional: quando configurado no projeto, a requisição também deve fornecê-lo.
- */
+/** Webhook da InfinitePay: confirma o pagamento associado ao order_nsu. */
 const payloadSchema = z.object({
   order_nsu: z.string().min(1).max(200),
   amount: z.union([z.number(), z.string()]).optional(),
@@ -43,13 +40,12 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
         const parsed = payloadSchema.safeParse(bruto);
         if (!parsed.success) return new Response("Dados inválidos", { status: 400 });
         const dados = parsed.data;
-
         const supabase = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 
-        // order_nsu é o vínculo entre o checkout e o registro do agendamento.
+        // O checkout deve usar o UUID do agendamento como order_nsu.
         const { data: agendamento, error: buscaError } = await supabase
           .from("agendamentos")
-          .select("id, plano, forma_pagamento, status_pagamento")
+          .select("id, status_pagamento")
           .eq("id", dados.order_nsu)
           .maybeSingle();
 
@@ -57,24 +53,12 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
           console.error("[infinitepay-webhook] busca:", buscaError.message);
           return new Response("Erro ao localizar pedido", { status: 500 });
         }
-
-        if (!agendamento) {
-          return Response.json({ ok: true, ignorado: "order_nsu não encontrado" });
-        }
+        if (!agendamento) return Response.json({ ok: true, ignorado: "order_nsu não encontrado" });
 
         const recebido = valorNumero(dados.paid_amount ?? dados.amount);
         if (recebido === null || recebido <= 0) {
           return new Response("Valor do pagamento inválido", { status: 400 });
         }
-
-        // O valor esperado é derivado do plano salvo no próprio agendamento.
-        const valoresPlanos: Record<string, number> = {
-          "Plano Mensal": 1,
-          "Plano Trimestral": 1,
-          "Plano Semestral": 1,
-          "Plano Anual": 1,
-        };
-        void valoresPlanos;
 
         const { error: updateError } = await supabase
           .from("agendamentos")
