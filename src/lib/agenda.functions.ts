@@ -38,12 +38,9 @@ export const listarAgenda = createServerFn({ method: "GET" }).handler(
 );
 
 export type NovoAgendamento = {
-  nome: string;
-  whatsapp: string;
+  pagamentoId: string;
   data: string;
   horario: string;
-  plano: string;
-  formaPagamento: string;
 };
 
 export type ResultadoAgendamento =
@@ -53,49 +50,61 @@ export type ResultadoAgendamento =
 export const criarAgendamento = createServerFn({ method: "POST" })
   .inputValidator((input: NovoAgendamento) => input)
   .handler(async ({ data }): Promise<ResultadoAgendamento> => {
-    const nome = String(data.nome ?? "").trim().slice(0, 120);
-    const whatsapp = String(data.whatsapp ?? "").replace(/\D/g, "").slice(0, 13);
-    const plano = String(data.plano ?? "").trim().slice(0, 120);
-    const formaPagamento = String(data.formaPagamento ?? "").trim().slice(0, 60);
+    const pagamentoId = String(data.pagamentoId ?? "").trim();
+    if (!pagamentoId || !/^\d{4}-\d{2}-\d{2}$/.test(data.data) || !/^\d{2}:\d{2}$/.test(data.horario)) {
+      return { ok: false, erro: "Pagamento, data ou horário inválidos." };
+    }
 
-    if (!nome || whatsapp.length < 10 || !plano)
-      return { ok: false, erro: "Dados incompletos para o agendamento." };
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(data.data) || !/^\d{2}:\d{2}$/.test(data.horario))
-      return { ok: false, erro: "Data ou horário inválidos." };
-
-    // O horário precisa existir na agenda e estar livre
     const agenda = await listarAgenda();
     const dia = agenda.find((d) => d.data === data.data);
     const slot = dia?.slots.find((s) => s.horario === data.horario);
     if (!slot) return { ok: false, erro: "Esse horário não está disponível na agenda." };
-    if (slot.ocupado)
+    if (slot.ocupado) {
       return {
         ok: false,
         ocupado: true,
         erro: "Esse horário acabou de ser reservado. Escolha outro horário disponível.",
       };
+    }
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: inserido, error } = await supabaseAdmin
+    const db = supabaseAdmin as any;
+
+    // O servidor busca os dados do cliente e exige pagamento confirmado.
+    // Nada vindo do navegador pode alterar nome, plano ou status do pagamento.
+    const { data: pagamento, error: pagamentoError } = await db
+      .from("pagamentos")
+      .select("id, nome, whatsapp, plano, forma_pagamento, status")
+      .eq("id", pagamentoId)
+      .maybeSingle();
+
+    if (pagamentoError || !pagamento) return { ok: false, erro: "Pedido de pagamento não encontrado." };
+    if (pagamento.status !== "pago") return { ok: false, erro: "O pagamento ainda não foi confirmado." };
+
+    const { data: inserido, error } = await db
       .from("agendamentos")
       .insert({
-        nome,
-        whatsapp,
+        nome: pagamento.nome,
+        whatsapp: pagamento.whatsapp,
         data: data.data,
         horario: data.horario,
-        plano,
-        forma_pagamento: formaPagamento,
+        plano: pagamento.plano,
+        forma_pagamento: pagamento.forma_pagamento,
+        status_pagamento: "pago",
+        status_agendamento: "confirmado",
       })
       .select("id")
       .single();
 
     if (error) {
-      if (error.code === "23505")
+      if (error.code === "23505") {
         return {
           ok: false,
           ocupado: true,
           erro: "Esse horário acabou de ser reservado. Escolha outro horário disponível.",
         };
+      }
+      console.error("[agenda] erro ao salvar:", error.message);
       return { ok: false, erro: "Não foi possível salvar o agendamento. Tente novamente." };
     }
     return { ok: true, id: inserido.id };
