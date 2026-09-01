@@ -660,7 +660,7 @@ function Index() {
         {/* 7. Sono */}
         <section className="card-outline p-5">
           <span className="section-chip">
-            <MoonStar className="h-3.5 w-3.5" /> 6. Sono
+            <MoonStar className="h-3.5 w-3.5" /> 7. Sono
           </span>
           <fieldset className="mt-4">
             <legend className="mb-2 text-sm font-medium">
@@ -686,7 +686,7 @@ function Index() {
         {/* 8. Alimentação */}
         <section className="card-outline p-5">
           <span className="section-chip">
-            <Salad className="h-3.5 w-3.5" /> 7. Alimentação
+            <Salad className="h-3.5 w-3.5" /> 8. Alimentação
           </span>
           <label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">
             Como você descreveria sua alimentação atualmente?
@@ -703,7 +703,7 @@ function Index() {
         {/* 9. Informações Adicionais */}
         <section className="card-outline p-5">
           <span className="section-chip">
-            <MessageCircleHeart className="h-3.5 w-3.5" /> 8. Informações Adicionais
+            <MessageCircleHeart className="h-3.5 w-3.5" /> 9. Informações Adicionais
           </span>
           <label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">
             Há algo mais que você acha importante compartilhar?
