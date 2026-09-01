@@ -619,7 +619,7 @@ function Index() {
         {/* 6. Filhos */}
         <section className="card-outline p-5">
           <span className="section-chip">
-            <Baby className="h-3.5 w-3.5" /> 5. Filhos
+            <Baby className="h-3.5 w-3.5" /> 6. Filhos
           </span>
           <div className="mt-4 flex flex-col gap-4">
             <fieldset>
@@ -717,10 +717,10 @@ function Index() {
           </label>
         </section>
 
-        {/* 9. Plano e Pagamento */}
+        {/* 10. Plano e Pagamento */}
         <section className="card-outline p-5">
           <span className="section-chip">
-            <Heart className="h-3.5 w-3.5" /> 9. Plano e Pagamento
+            <Heart className="h-3.5 w-3.5" /> 10. Plano e Pagamento
           </span>
           <Planos
             plano={plano}
