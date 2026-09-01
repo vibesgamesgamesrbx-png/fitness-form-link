@@ -47,7 +47,7 @@ export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado 
       });
       if (res.ok) {
         setConfirmado(true);
-        onConfirmado(diaSel, horaSel);
+        onConfirmado?.(diaSel, horaSel);
       } else {
         setErro(res.erro);
         setHoraSel("");
