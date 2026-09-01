@@ -10,7 +10,7 @@ export default defineConfig({
       crawlLinks: true,
       failOnError: true,
       // Private routes require a browser session and must be rendered on demand.
-      filter: ({ path }) => path !== "/admin",
+      filter: ({ path }: { path: string }) => path !== "/admin",
     },
   },
 });
