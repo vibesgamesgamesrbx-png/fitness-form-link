@@ -22,10 +22,6 @@ function item(secoes: FichaSecao[], rotulo: string) {
   return "";
 }
 
-function secao(secoes: FichaSecao[], titulo: string) {
-  return secoes.find((s) => s.titulo === titulo)?.itens ?? [];
-}
-
 export type NovaFichaAnamnese = {
   nome: string;
   whatsapp: string;
@@ -41,36 +37,15 @@ export const salvarFichaAnamnese = createServerFn({ method: "POST" })
       throw new Error("Dados da ficha inválidos.");
     }
 
-    const nascimento = item(data.secoes, "Data de nascimento");
-    const idadeRaw = item(data.secoes, "Idade");
-    const objetivosRaw = item(data.secoes, "Principal objetivo");
-    const objetivos = objetivosRaw ? objetivosRaw.split(",").map((v) => v.trim()).filter(Boolean) : [];
-
-    const payload = {
-      nome,
-      whatsapp,
-      secoes: data.secoes,
-      data_nascimento: /^\d{2}\/\d{2}\/\d{4}$/.test(nascimento)
-        ? `${nascimento.slice(6, 10)}-${nascimento.slice(3, 5)}-${nascimento.slice(0, 2)}`
-        : null,
-      idade: /^\d+$/.test(idadeRaw) ? Number(idadeRaw) : null,
-      objetivos,
-    };
-
     const supabaseUrl = process.env["SUPABASE_URL"];
-    const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
-
-    if (!supabaseUrl || !publishableKey) {
+    if (!supabaseUrl) {
       throw new Error("Configuração do Supabase incompleta no servidor.");
     }
 
     const response = await fetch(`${supabaseUrl}/functions/v1/salvar-ficha-anamnese`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: publishableKey,
-      },
-      body: JSON.stringify({ nome: payload.nome, whatsapp: payload.whatsapp, secoes: payload.secoes }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome, whatsapp, secoes: data.secoes }),
     });
 
     const result = await response.json().catch(() => ({}));
