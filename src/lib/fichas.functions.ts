@@ -41,8 +41,6 @@ export const salvarFichaAnamnese = createServerFn({ method: "POST" })
       throw new Error("Dados da ficha inválidos.");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const db = supabaseAdmin as any;
     const nascimento = item(data.secoes, "Data de nascimento");
     const idadeRaw = item(data.secoes, "Idade");
     const objetivosRaw = item(data.secoes, "Principal objetivo");
@@ -51,40 +49,37 @@ export const salvarFichaAnamnese = createServerFn({ method: "POST" })
     const payload = {
       nome,
       whatsapp,
+      secoes: data.secoes,
       data_nascimento: /^\d{2}\/\d{2}\/\d{4}$/.test(nascimento)
         ? `${nascimento.slice(6, 10)}-${nascimento.slice(3, 5)}-${nascimento.slice(0, 2)}`
         : null,
       idade: /^\d+$/.test(idadeRaw) ? Number(idadeRaw) : null,
       objetivos,
-      dados: data.secoes,
     };
 
-    const { data: existente } = await db
-      .from("fichas_anamnese")
-      .select("id")
-      .eq("nome", nome)
-      .eq("whatsapp", whatsapp)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const supabaseUrl = process.env["SUPABASE_URL"];
+    const publishableKey = process.env["SUPABASE_PUBLISHABLE_KEY"];
 
-    let ficha: { id: string } | null = null;
-    let error: any = null;
-    if (existente?.id) {
-      const result = await db.from("fichas_anamnese").update(payload).eq("id", existente.id).select("id").single();
-      ficha = result.data;
-      error = result.error;
-    } else {
-      const result = await db.from("fichas_anamnese").insert(payload).select("id").single();
-      ficha = result.data;
-      error = result.error;
+    if (!supabaseUrl || !publishableKey) {
+      throw new Error("Configuração do Supabase incompleta no servidor.");
     }
 
-    if (error || !ficha) {
-      console.error("[ficha] erro ao salvar:", error?.message);
-      throw new Error("Não foi possível salvar a ficha agora.");
+    const response = await fetch(`${supabaseUrl}/functions/v1/salvar-ficha-anamnese`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: publishableKey,
+      },
+      body: JSON.stringify({ nome: payload.nome, whatsapp: payload.whatsapp, secoes: payload.secoes }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result?.id) {
+      console.error("[ficha] erro ao salvar pela Edge Function:", result?.error ?? response.statusText);
+      throw new Error(result?.error || "Não foi possível salvar a ficha agora.");
     }
-    return { id: ficha.id as string };
+
+    return { id: String(result.id) };
   });
 
 export type FichaAdmin = {
