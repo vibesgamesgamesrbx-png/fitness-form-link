@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { CalendarHeart, Clock, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import {
-  ativarAdmin,
   atualizarAgendamento,
   criarBloqueio,
   listarAgendamentosAdmin,
@@ -43,8 +42,7 @@ function AdminPage() {
     setCarregando(true);
     setErro("");
     try {
-      const admin = await souAdmin();
-      if (!admin && !(await ativarAdmin())) throw new Error("Acesso restrito.");
+      if (!(await souAdmin())) throw new Error("Acesso restrito.");
       const [dados, bloqueiosAtuais] = await Promise.all([listarAgendamentosAdmin(), listarBloqueiosAdmin()]);
       setLista(dados as Agendamento[]);
       setBloqueios(bloqueiosAtuais);
