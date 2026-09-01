@@ -14,6 +14,7 @@ export type AgendaConfig = {
 };
 
 export type Bloqueio = { data: string; horario: string | null };
+export type BloqueioRecorrente = { dia_semana: number; horario: string };
 export type SlotAgenda = { horario: string; ocupado: boolean; bloqueado?: boolean };
 export type DiaAgenda = { data: string; rotulo: string; slots: SlotAgenda[] };
 
@@ -49,15 +50,24 @@ const paraMinutos = (t: string) => {
 const paraHora = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 
 /** Monta os próximos dias com horários livres, ocupados por alunas ou bloqueados pela administradora. */
-export function montarAgenda(configs: AgendaConfig[], ocupados: { data: string; horario: string }[], bloqueios: Bloqueio[], dias = 21, inicio = hojeISO()): DiaAgenda[] {
+export function montarAgenda(
+  configs: AgendaConfig[],
+  ocupados: { data: string; horario: string }[],
+  bloqueios: Bloqueio[],
+  bloqueiosRecorrentes: BloqueioRecorrente[] = [],
+  dias = 21,
+  inicio = hojeISO(),
+): DiaAgenda[] {
   const ocupadoSet = new Set(ocupados.map((o) => `${o.data}|${hhmm(o.horario)}`));
   const diasBloqueados = new Set(bloqueios.filter((b) => !b.horario).map((b) => b.data));
   const slotsBloqueados = new Set(bloqueios.filter((b) => b.horario).map((b) => `${b.data}|${hhmm(b.horario!)}`));
+  const recorrentesBloqueados = new Set(bloqueiosRecorrentes.map((b) => `${b.dia_semana}|${hhmm(b.horario)}`));
 
   const resultado: DiaAgenda[] = [];
   for (let i = 1; i <= dias; i++) {
     const data = somarDias(inicio, i);
-    const cfg = configs.find((c) => c.dia_semana === diaDaSemana(data) && c.ativo);
+    const diaSemana = diaDaSemana(data);
+    const cfg = configs.find((c) => c.dia_semana === diaSemana && c.ativo);
     if (!cfg) continue;
 
     const passo = Math.max(15, cfg.duracao_min + cfg.intervalo_min);
@@ -68,7 +78,10 @@ export function montarAgenda(configs: AgendaConfig[], ocupados: { data: string; 
       slots.push({
         horario,
         ocupado: ocupadoSet.has(chave),
-        bloqueado: diasBloqueados.has(data) || slotsBloqueados.has(chave),
+        bloqueado:
+          diasBloqueados.has(data) ||
+          slotsBloqueados.has(chave) ||
+          recorrentesBloqueados.has(`${diaSemana}|${horario}`),
       });
     }
     if (slots.length) resultado.push({ data, rotulo: rotuloDia(data), slots });
