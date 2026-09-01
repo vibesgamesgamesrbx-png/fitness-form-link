@@ -149,9 +149,9 @@ export const atualizarAgendamento = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await garantirAdmin(context as never);
-    const patch: Record<string, string> = {};
-    if (data.status_pagamento) patch["status_pagamento"] = data.status_pagamento;
-    if (data.status_agendamento) patch["status_agendamento"] = data.status_agendamento;
+    const patch: { status_pagamento?: string; status_agendamento?: string } = {};
+    if (data.status_pagamento) patch.status_pagamento = data.status_pagamento;
+    if (data.status_agendamento) patch.status_agendamento = data.status_agendamento;
     const { error } = await context.supabase
       .from("agendamentos")
       .update(patch)
