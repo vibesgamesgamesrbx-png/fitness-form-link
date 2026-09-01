@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const JULIANA_ADMIN_EMAIL = "juliana.doro@hotmail.com";
+const SUPABASE_PROJECT_URL = "https://vwceklxxklkftqzxnbkb.supabase.co";
 
 type FichaItem = { rotulo: string; valor: string };
 type FichaSecao = { titulo: string; itens: FichaItem[] };
@@ -37,20 +38,42 @@ export const salvarFichaAnamnese = createServerFn({ method: "POST" })
       throw new Error("Dados da ficha inválidos.");
     }
 
-    const supabaseUrl = process.env["SUPABASE_URL"];
-    if (!supabaseUrl) {
-      throw new Error("Configuração do Supabase incompleta no servidor.");
+    // The Supabase project URL is public configuration. Keeping the project
+    // target explicit here avoids depending on a possibly mismatched
+    // Lovable Cloud SUPABASE_URL. The service-role key remains only inside
+    // the Supabase Edge Function and is never sent to the browser.
+    const endpoint = `${SUPABASE_PROJECT_URL}/functions/v1/salvar-ficha-anamnese`;
+
+    let response: Response;
+    try {
+      response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, whatsapp, secoes: data.secoes }),
+      });
+    } catch (error) {
+      console.error("[ficha] falha de rede ao chamar Edge Function:", error);
+      throw new Error("Não foi possível conectar ao serviço de salvamento.");
     }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/salvar-ficha-anamnese`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, whatsapp, secoes: data.secoes }),
-    });
+    const rawBody = await response.text();
+    let result: { id?: unknown; error?: string } = {};
+    try {
+      result = JSON.parse(rawBody) as { id?: unknown; error?: string };
+    } catch {
+      console.error("[ficha] resposta não-JSON da Edge Function:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: rawBody.slice(0, 500),
+      });
+    }
 
-    const result = await response.json().catch(() => ({}));
     if (!response.ok || !result?.id) {
-      console.error("[ficha] erro ao salvar pela Edge Function:", result?.error ?? response.statusText);
+      console.error("[ficha] Edge Function rejeitou o salvamento:", {
+        status: response.status,
+        statusText: response.statusText,
+        body: rawBody.slice(0, 500),
+      });
       throw new Error(result?.error || "Não foi possível salvar a ficha agora.");
     }
 
