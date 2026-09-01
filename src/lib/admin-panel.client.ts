@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = "https://vwceklxxklkftqzxnbkb.supabase.co";
+export type FichaItem = { rotulo: string; valor: string };
+export type FichaSecao = { titulo: string; itens: FichaItem[] };
+export type FichaAdmin = { id: string; nome: string; whatsapp: string; data_nascimento: string | null; idade: number | null; objetivos: string[]; dados: FichaSecao[]; pagamento_id: string | null; created_at: string };
 
 async function chamarAdmin(action: string, body: Record<string, unknown> = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -20,7 +23,7 @@ export async function souAdmin() { try { await chamarAdmin("fichas"); return tru
 export async function listarAgendamentosAdmin() { return (await chamarAdmin("agendamentos")) ?? []; }
 export async function listarBloqueiosAdmin() { return (await chamarAdmin("bloqueios")) ?? []; }
 export async function listarBloqueiosRecorrentesAdmin() { return (await chamarAdmin("bloqueios-recorrentes")) ?? []; }
-export async function listarFichasAdmin() { return (await chamarAdmin("fichas")) ?? []; }
+export async function listarFichasAdmin(): Promise<FichaAdmin[]> { return ((await chamarAdmin("fichas")) ?? []) as FichaAdmin[]; }
 export async function listarPagamentosAdmin() { return (await chamarAdmin("pagamentos")) ?? []; }
 export async function criarBloqueio({ data }: { data: { data: string; horario?: string | null; motivo?: string } }) { return await chamarAdmin("criar-bloqueio", data); }
 export async function removerBloqueio({ data }: { data: { id: string } }) { await chamarAdmin("remover-bloqueio", data); return { ok: true }; }
