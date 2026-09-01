@@ -657,7 +657,7 @@ function Index() {
           </div>
         </section>
 
-        {/* 6. Sono */}
+        {/* 7. Sono */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <MoonStar className="h-3.5 w-3.5" /> 6. Sono
@@ -683,7 +683,7 @@ function Index() {
           </fieldset>
         </section>
 
-        {/* 7. Alimentação */}
+        {/* 8. Alimentação */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Salad className="h-3.5 w-3.5" /> 7. Alimentação
@@ -700,7 +700,7 @@ function Index() {
           </label>
         </section>
 
-        {/* 8. Informações Adicionais */}
+        {/* 9. Informações Adicionais */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <MessageCircleHeart className="h-3.5 w-3.5" /> 8. Informações Adicionais
