@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
 import Planos, { LINKS_CARTAO } from "@/components/Planos";
+import Agenda from "@/components/Agenda";
 
 
 export const Route = createFileRoute("/")({
