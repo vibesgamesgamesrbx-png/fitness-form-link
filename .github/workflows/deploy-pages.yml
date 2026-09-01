@@ -1,4 +1,4 @@
-name: Deploy to GitHub Pages
+name: Validate build
 
 on:
   push:
@@ -7,14 +7,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: pages
+  group: build-validation
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -28,29 +28,5 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Build static site
+      - name: Build TanStack Start application
         run: bun run build
-
-      - name: Prepare static files
-        run: |
-          test -f .output/public/index.html
-          cp .output/public/index.html .output/public/404.html
-
-      - name: Publish to gh-pages
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -rf /tmp/gh-pages
-          mkdir -p /tmp/gh-pages
-          cp -R .output/public/. /tmp/gh-pages/
-          cd /tmp/gh-pages
-          git init
-          git checkout -b gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "deploy: publish static site"
-          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git push --force origin gh-pages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
