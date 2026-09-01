@@ -1,72 +1,90 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-/**
- * Webhook da InfinitePay: confirma o pagamento do plano e libera a agenda.
- * Chame com o cabeçalho `x-webhook-token: <INFINITEPAY_WEBHOOK_SECRET>`
- * ou `?token=<INFINITEPAY_WEBHOOK_SECRET>`.
- */
 const payloadSchema = z.object({
-  // identificação do agendamento (qualquer um dos campos abaixo)
-  agendamento_id: z.string().uuid().optional(),
-  whatsapp: z.string().min(8).max(20).optional(),
-  // status do pagamento na InfinitePay
-  status: z.string().max(40).optional(),
-  amount: z.union([z.number(), z.string()]).optional(),
-});
+  order_nsu: z.string().min(1).max(200),
+  amount: z.union([z.number(), z.string()]),
+  paid_amount: z.union([z.number(), z.string()]).optional(),
+  transaction_nsu: z.string().optional(),
+  invoice_slug: z.string().optional(),
+  receipt_url: z.string().url().optional(),
+  capture_method: z.string().optional(),
+  items: z.array(z.unknown()).optional(),
+}).passthrough();
 
-const STATUS_PAGO = ["paid", "approved", "succeeded", "success", "pago", "confirmed"];
+function centavos(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return Math.round(value);
+  if (typeof value !== "string") return null;
+  const n = Number(value.replace(",", "."));
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
 
 export const Route = createFileRoute("/api/public/infinitepay-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env["INFINITEPAY_WEBHOOK_SECRET"];
-        if (!secret) return new Response("Webhook não configurado", { status: 500 });
-
-        const url = new URL(request.url);
-        const token = request.headers.get("x-webhook-token") ?? url.searchParams.get("token") ?? "";
-        if (token !== secret) return new Response("Não autorizado", { status: 401 });
-
         let bruto: unknown;
         try {
           bruto = await request.json();
         } catch {
-          return new Response("Corpo inválido", { status: 400 });
+          return Response.json({ success: false, message: "Corpo inválido" }, { status: 400 });
         }
 
         const parsed = payloadSchema.safeParse(bruto);
-        if (!parsed.success) return new Response("Dados inválidos", { status: 400 });
-        const dados = parsed.data;
+        if (!parsed.success) {
+          return Response.json({ success: false, message: "Dados inválidos" }, { status: 400 });
+        }
 
-        const status = (dados.status ?? "paid").toLowerCase();
-        if (!STATUS_PAGO.includes(status)) {
-          return Response.json({ ok: true, ignorado: status });
+        const dados = parsed.data;
+        const valor = centavos(dados.amount);
+        const pago = centavos(dados.paid_amount ?? dados.amount);
+        if (valor === null || pago === null) {
+          return Response.json({ success: false, message: "Valor inválido" }, { status: 400 });
         }
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const db = supabaseAdmin as any;
 
-        let query = supabaseAdmin
-          .from("agendamentos")
-          .update({ status_pagamento: "pago", status_agendamento: "confirmado" });
+        const { data: pagamento, error: buscaError } = await db
+          .from("pagamentos")
+          .select("id, valor_centavos, status")
+          .eq("order_nsu", dados.order_nsu)
+          .maybeSingle();
 
-        if (dados.agendamento_id) {
-          query = query.eq("id", dados.agendamento_id);
-        } else if (dados.whatsapp) {
-          query = query
-            .eq("whatsapp", dados.whatsapp.replace(/\D/g, ""))
-            .eq("status_pagamento", "pendente");
-        } else {
-          return new Response("Informe agendamento_id ou whatsapp", { status: 400 });
+        if (buscaError) {
+          console.error("[infinitepay-webhook] busca:", buscaError.message);
+          return Response.json({ success: false, message: "Erro interno" }, { status: 500 });
         }
 
-        const { data, error } = await query.select("id");
-        if (error) {
-          console.error("[infinitepay-webhook]", error.message);
-          return new Response("Erro ao atualizar", { status: 500 });
+        if (!pagamento) {
+          return Response.json({ success: false, message: "Pedido não encontrado" }, { status: 400 });
         }
 
-        return Response.json({ ok: true, atualizados: data?.length ?? 0 });
+        // A própria InfinitePay informa o valor do pedido em centavos. Só confirmamos
+        // quando o valor recebido não é menor que o valor esperado.
+        if (valor !== pagamento.valor_centavos || pago < pagamento.valor_centavos) {
+          return Response.json({ success: false, message: "Valor do pagamento não confere" }, { status: 400 });
+        }
+
+        const { error: updateError } = await db
+          .from("pagamentos")
+          .update({
+            status: "pago",
+            transaction_nsu: dados.transaction_nsu ?? null,
+            invoice_slug: dados.invoice_slug ?? null,
+            receipt_url: dados.receipt_url ?? null,
+            paid_amount_centavos: pago,
+            pago_em: new Date().toISOString(),
+          })
+          .eq("id", pagamento.id)
+          .eq("status", "pendente");
+
+        if (updateError) {
+          console.error("[infinitepay-webhook] atualização:", updateError.message);
+          return Response.json({ success: false, message: "Erro interno" }, { status: 500 });
+        }
+
+        return Response.json({ success: true, message: null });
       },
     },
   },
