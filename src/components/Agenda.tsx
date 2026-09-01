@@ -8,7 +8,7 @@ type Props = {
   whatsapp: string;
   plano: string;
   pagamento: string;
-  onConfirmado: (data: string, horario: string) => void;
+  onConfirmado?: (data: string, horario: string) => void;
 };
 
 export default function Agenda({ nome, whatsapp, plano, pagamento, onConfirmado }: Props) {
