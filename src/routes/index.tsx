@@ -735,6 +735,18 @@ const [qualMedicamento, setQualMedicamento] = useState("");
 
       </form>
 
+      {enviado && (
+        <div className="mt-6 px-5">
+          <Agenda
+            nome={nome}
+            whatsapp={whatsappCliente.replace(/\D/g, "")}
+            plano={plano}
+            pagamento={pagamento}
+          />
+        </div>
+      )}
+
+
       <footer className="mt-10 px-5 text-center">
         <div className="divider-heart mx-auto max-w-xs text-sm">
           <Heart className="h-4 w-4 shrink-0" fill="currentColor" />
