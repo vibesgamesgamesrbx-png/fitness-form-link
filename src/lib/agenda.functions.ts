@@ -27,7 +27,7 @@ export const listarAgenda = createServerFn({ method: "GET" }).handler(
     const [{ data: configs }, { data: ocupados }, { data: bloqueios }] = await Promise.all([
       supabase.from("agenda_config").select("*"),
       supabase.rpc("horarios_ocupados"),
-      supabase.from("agenda_bloqueios").select("data, horario"),
+      supabase.from("agenda_bloqueios_publicos").select("data, horario"),
     ]);
     return montarAgenda(
       (configs ?? []) as AgendaConfig[],
@@ -90,7 +90,7 @@ export const criarAgendamento = createServerFn({ method: "POST" })
         horario: data.horario,
         plano: pagamento.plano,
         forma_pagamento: pagamento.forma_pagamento,
-        status_pagamento: "pago",
+        status_pagamento: "confirmado",
         status_agendamento: "confirmado",
       })
       .select("id")
