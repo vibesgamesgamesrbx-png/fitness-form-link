@@ -55,15 +55,19 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
       auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
     });
 
-    const { data, error } = await supabase.auth.getClaims(token);
-    if (error || !data?.claims) throw new Error('Unauthorized: Invalid token');
-    if (!data.claims.sub) throw new Error('Unauthorized: No user ID found in token');
+    // Validate the access token and fetch the authoritative user record.
+    // getClaims() can omit profile fields such as email depending on the JWT
+    // configuration, which previously caused the Juliana admin check to fail
+    // even for the correct authenticated account.
+    const { data, error } = await supabase.auth.getUser(token);
+    if (error || !data?.user) throw new Error('Unauthorized: Invalid token');
+    if (!data.user.id) throw new Error('Unauthorized: No user ID found in token');
 
     return next({
       context: {
         supabase,
-        userId: data.claims.sub,
-        claims: data.claims,
+        userId: data.user.id,
+        claims: { sub: data.user.id, email: data.user.email ?? '' },
         authorization: authHeader,
       },
     });
