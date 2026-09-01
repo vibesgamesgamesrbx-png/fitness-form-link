@@ -31,18 +31,14 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
         if (token !== secret) return new Response("Não autorizado", { status: 401 });
 
         let bruto: unknown;
-        try {
-          bruto = await request.json();
-        } catch {
-          return new Response("Corpo inválido", { status: 400 });
-        }
-
+        try { bruto = await request.json(); } catch { return new Response("Corpo inválido", { status: 400 }); }
         const parsed = payloadSchema.safeParse(bruto);
         if (!parsed.success) return new Response("Dados inválidos", { status: 400 });
         const dados = parsed.data;
+
         const supabase = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 
-        // O checkout deve usar o UUID do agendamento como order_nsu.
+        // Compatibilidade com o schema atual: order_nsu pode conter o UUID do agendamento.
         const { data: agendamento, error: buscaError } = await supabase
           .from("agendamentos")
           .select("id, status_pagamento")
@@ -56,9 +52,7 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
         if (!agendamento) return Response.json({ ok: true, ignorado: "order_nsu não encontrado" });
 
         const recebido = valorNumero(dados.paid_amount ?? dados.amount);
-        if (recebido === null || recebido <= 0) {
-          return new Response("Valor do pagamento inválido", { status: 400 });
-        }
+        if (recebido === null || recebido <= 0) return new Response("Valor do pagamento inválido", { status: 400 });
 
         const { error: updateError } = await supabase
           .from("agendamentos")
@@ -70,7 +64,6 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
           console.error("[infinitepay-webhook] atualização:", updateError.message);
           return new Response("Erro ao confirmar pagamento", { status: 500 });
         }
-
         return Response.json({ ok: true, confirmado: true, agendamento_id: agendamento.id });
       },
     },
