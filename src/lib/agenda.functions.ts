@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { montarAgenda, type AgendaConfig, type DiaAgenda } from "@/lib/agenda-slots";
+import {
+  montarAgenda,
+  type AgendaConfig,
+  type BloqueioRecorrente,
+  type DiaAgenda,
+} from "@/lib/agenda-slots";
 
 const JULIANA_ADMIN_EMAIL = "juliana.doro@hotmail.com";
 
@@ -23,15 +28,17 @@ function clientePublico() {
 
 export const listarAgenda = createServerFn({ method: "GET" }).handler(async (): Promise<DiaAgenda[]> => {
   const supabase = clientePublico();
-  const [{ data: configs }, { data: ocupados }, { data: bloqueios }] = await Promise.all([
+  const [{ data: configs }, { data: ocupados }, { data: bloqueios }, { data: bloqueiosRecorrentes }] = await Promise.all([
     supabase.from("agenda_config").select("*"),
     supabase.rpc("horarios_ocupados"),
     supabase.from("agenda_bloqueios_publicos").select("data, horario"),
+    supabase.rpc("horarios_bloqueados_recorrentes_publicos"),
   ]);
   return montarAgenda(
     (configs ?? []) as AgendaConfig[],
     (ocupados ?? []) as { data: string; horario: string }[],
     bloqueios ?? [],
+    (bloqueiosRecorrentes ?? []) as BloqueioRecorrente[],
   );
 });
 
@@ -118,6 +125,22 @@ export const listarBloqueiosAdmin = createServerFn({ method: "GET" })
     return data ?? [];
   });
 
+export type BloqueioRecorrenteAdmin = { id: string; dia_semana: number; horario: string };
+
+export const listarBloqueiosRecorrentesAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<BloqueioRecorrenteAdmin[]> => {
+    await garantirAdmin(context as never);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await (supabaseAdmin as any)
+      .from("agenda_bloqueios_recorrentes")
+      .select("id, dia_semana, horario")
+      .order("dia_semana", { ascending: true })
+      .order("horario", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
 export const criarBloqueio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { data: string; horario?: string | null; motivo?: string }) => input)
@@ -136,6 +159,27 @@ export const criarBloqueio = createServerFn({ method: "POST" })
     return inserido as BloqueioAdmin;
   });
 
+export const criarBloqueioRecorrente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { dia_semana: number; horario: string }) => input)
+  .handler(async ({ context, data }) => {
+    await garantirAdmin(context as never);
+    if (!Number.isInteger(data.dia_semana) || data.dia_semana < 1 || data.dia_semana > 5) {
+      throw new Error("Dia da semana inválido.");
+    }
+    if (!/^(0[6-9]|1\d|2[0-4]):00$/.test(data.horario)) {
+      throw new Error("Horário inválido.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: inserido, error } = await (supabaseAdmin as any)
+      .from("agenda_bloqueios_recorrentes")
+      .insert({ dia_semana: data.dia_semana, horario: `${data.horario}:00` })
+      .select("id, dia_semana, horario")
+      .single();
+    if (error) throw new Error(error.code === "23505" ? "Esse horário já está bloqueado." : error.message);
+    return inserido as BloqueioRecorrenteAdmin;
+  });
+
 export const removerBloqueio = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => input)
@@ -143,6 +187,17 @@ export const removerBloqueio = createServerFn({ method: "POST" })
     await garantirAdmin(context as never);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any).from("agenda_bloqueios").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removerBloqueioRecorrente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string }) => input)
+  .handler(async ({ context, data }) => {
+    await garantirAdmin(context as never);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as any).from("agenda_bloqueios_recorrentes").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
