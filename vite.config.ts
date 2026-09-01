@@ -9,8 +9,9 @@ export default defineConfig({
       autoStaticPathsDiscovery: true,
       crawlLinks: true,
       failOnError: true,
-      // Private routes require a browser session and must be rendered on demand.
-      filter: ({ path }: { path: string }) => path !== "/admin",
+      // These routes depend on runtime state/query parameters and must be rendered on demand.
+      filter: ({ path }: { path: string }) =>
+        path !== "/admin" && path !== "/pagamento-confirmado",
     },
   },
 });
