@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarHeart, Clock, Loader2, RefreshCw } from "lucide-react";
+import { AdminGoogleSheets } from "@/components/AdminGoogleSheets";
 import {
   atualizarAgendamento,
   criarBloqueioRecorrente,
@@ -82,7 +83,6 @@ function AdminPage() {
     const existente = bloqueiosRecorrentes.find((b) => `${b.dia_semana}|${b.horario.slice(0, 5)}` === chave);
     setSalvando(chave); setErro(""); setSucesso("");
 
-    // Atualiza a interface imediatamente: bloqueado = cinza, liberado = verde.
     if (existente) {
       setBloqueiosRecorrentes((atual) => atual.filter((b) => b.id !== existente.id));
     } else {
@@ -99,7 +99,6 @@ function AdminPage() {
         setSucesso(`${DIAS.find((d) => d.numero === diaSemana)?.nome} às ${horario} bloqueado semanalmente.`);
       }
     } catch (e) {
-      // Desfaz a alteração visual se o servidor recusar a operação.
       setBloqueiosRecorrentes((atual) => {
         if (existente) return [...atual, existente];
         return atual.filter((b) => b.id !== `temp-${chave}`);
@@ -210,6 +209,8 @@ function AdminPage() {
           </article>
         ))}
       </div>
+
+      <AdminGoogleSheets lista={lista} />
 
       <div className="mt-6 flex items-center justify-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> Horários ocupados aparecem em cinza e não podem ser liberados.</span>
