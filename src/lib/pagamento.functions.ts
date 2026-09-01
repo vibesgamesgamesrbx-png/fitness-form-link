@@ -54,20 +54,14 @@ export const criarCheckoutInfinitePay = createServerFn({ method: "POST" })
     const base = appUrl();
     const payload = {
       handle: "juliana-doro-truglia",
-      redirect_url: `${base}/?payment=${encodeURIComponent(orderNsu)}`,
+      redirect_url: `${base}/pagamento-confirmado?payment=${encodeURIComponent(orderNsu)}`,
       webhook_url: `${base}/api/public/infinitepay-webhook`,
       order_nsu: orderNsu,
       customer: {
         name: nome,
         phone_number: `+55${whatsapp}`,
       },
-      items: [
-        {
-          quantity: 1,
-          price: valorCentavos,
-          description: plano,
-        },
-      ],
+      items: [{ quantity: 1, price: valorCentavos, description: plano }],
     };
 
     const response = await fetch("https://api.checkout.infinitepay.io/links", {
@@ -77,11 +71,7 @@ export const criarCheckoutInfinitePay = createServerFn({ method: "POST" })
     });
 
     let result: any = null;
-    try {
-      result = await response.json();
-    } catch {
-      result = null;
-    }
+    try { result = await response.json(); } catch { result = null; }
 
     if (!response.ok || !result?.url) {
       await db.from("pagamentos").delete().eq("order_nsu", orderNsu);
