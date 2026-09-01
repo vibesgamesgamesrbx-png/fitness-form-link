@@ -51,6 +51,23 @@ export const criarCheckoutInfinitePay = createServerFn({ method: "POST" })
 
     if (insertError) throw new Error("Não foi possível criar o pedido de pagamento.");
 
+    const { data: pagamentoCriado } = await db
+      .from("pagamentos")
+      .select("id")
+      .eq("order_nsu", orderNsu)
+      .maybeSingle();
+    const { data: fichaRecente } = await db
+      .from("fichas_anamnese")
+      .select("id")
+      .eq("nome", nome)
+      .eq("whatsapp", whatsapp)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (pagamentoCriado?.id && fichaRecente?.id) {
+      await db.from("fichas_anamnese").update({ pagamento_id: pagamentoCriado.id }).eq("id", fichaRecente.id);
+    }
+
     const base = appUrl();
     const payload = {
       handle: "juliana-doro-truglia",

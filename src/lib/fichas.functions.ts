@@ -48,7 +48,7 @@ export const salvarFichaAnamnese = createServerFn({ method: "POST" })
     const objetivosRaw = item(data.secoes, "Principal objetivo");
     const objetivos = objetivosRaw ? objetivosRaw.split(",").map((v) => v.trim()).filter(Boolean) : [];
 
-    const { data: ficha, error } = await db.from("fichas_anamnese").insert({
+    const payload = {
       nome,
       whatsapp,
       data_nascimento: /^\d{2}\/\d{2}\/\d{4}$/.test(nascimento)
@@ -57,7 +57,28 @@ export const salvarFichaAnamnese = createServerFn({ method: "POST" })
       idade: /^\d+$/.test(idadeRaw) ? Number(idadeRaw) : null,
       objetivos,
       dados: data.secoes,
-    }).select("id").single();
+    };
+
+    const { data: existente } = await db
+      .from("fichas_anamnese")
+      .select("id")
+      .eq("nome", nome)
+      .eq("whatsapp", whatsapp)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let ficha: { id: string } | null = null;
+    let error: any = null;
+    if (existente?.id) {
+      const result = await db.from("fichas_anamnese").update(payload).eq("id", existente.id).select("id").single();
+      ficha = result.data;
+      error = result.error;
+    } else {
+      const result = await db.from("fichas_anamnese").insert(payload).select("id").single();
+      ficha = result.data;
+      error = result.error;
+    }
 
     if (error || !ficha) {
       console.error("[ficha] erro ao salvar:", error?.message);

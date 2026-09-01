@@ -12,6 +12,7 @@ import {
   Send,
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
+import { salvarFichaAnamnese } from "@/lib/fichas.functions";
 import Planos, { LINKS_CARTAO } from "@/components/Planos";
 import Agenda from "@/components/Agenda";
 
@@ -97,7 +98,9 @@ function Index() {
   const [problemaSaude, setProblemaSaude] = useState("");
   const [qualProblema, setQualProblema] = useState("");
   const [tomaMedicamento, setTomaMedicamento] = useState("");
-const [qualMedicamento, setQualMedicamento] = useState("");
+  const [qualMedicamento, setQualMedicamento] = useState("");
+  const [tomaCaneta, setTomaCaneta] = useState("");
+  const [qualCaneta, setQualCaneta] = useState("");
 
   const [temFilhos, setTemFilhos] = useState("");
   const [quantosFilhos, setQuantosFilhos] = useState("");
@@ -199,6 +202,20 @@ const [qualMedicamento, setQualMedicamento] = useState("");
         ],
       },
       {
+        titulo: "Medicamentos",
+        itens: [
+          { rotulo: "Toma medicamento atualmente", valor: na(tomaMedicamento) },
+          { rotulo: "Qual medicamento", valor: tomaMedicamento === "Sim" ? na(qualMedicamento) : "—" },
+        ],
+      },
+      {
+        titulo: "Caneta Emagrecedora",
+        itens: [
+          { rotulo: "Utiliza caneta emagrecedora", valor: na(tomaCaneta) },
+          { rotulo: "Qual", valor: tomaCaneta === "Sim" ? na(qualCaneta) : "—" },
+        ],
+      },
+      {
         titulo: "Filhos",
         itens: [
           { rotulo: "Possui filhos", valor: na(temFilhos) },
@@ -222,6 +239,17 @@ const [qualMedicamento, setQualMedicamento] = useState("");
         ],
       },
     ];
+
+    try {
+      await salvarFichaAnamnese({
+        data: { nome, whatsapp: phoneDigits, secoes },
+      });
+    } catch (error) {
+      const mensagem = error instanceof Error ? error.message : "Não foi possível salvar a ficha agora.";
+      setErrors([mensagem]);
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+      return;
+    }
 
     const observacaoPagamento =
       pagamento === "Pix"
@@ -562,7 +590,33 @@ const [qualMedicamento, setQualMedicamento] = useState("");
           </div>
         </section>
 
-        {/* 5. Filhos */}
+        {/* 5. Caneta Emagrecedora */}
+        <section className="card-outline p-5">
+          <span className="section-chip">
+            <Heart className="h-3.5 w-3.5" /> 5. Caneta Emagrecedora
+          </span>
+          <div className="mt-4 flex flex-col gap-4">
+            <fieldset>
+              <legend className="mb-2 text-sm font-medium">Você utiliza alguma caneta emagrecedora atualmente?</legend>
+              <div className="grid grid-cols-2 gap-2">
+                {["Sim", "Não"].map((opt) => (
+                  <label key={opt} className="radio-card">
+                    <input type="radio" name="caneta-emagrecedora" className="radio-dot" checked={tomaCaneta === opt} onChange={() => setTomaCaneta(opt)} />
+                    {opt}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            {tomaCaneta === "Sim" && (
+              <label className="flex flex-col gap-1.5 text-sm font-medium">
+                Se sim, qual?
+                <input className="field-input" value={qualCaneta} onChange={(e) => setQualCaneta(e.target.value)} placeholder="Informe o nome..." maxLength={200} />
+              </label>
+            )}
+          </div>
+        </section>
+
+        {/* 6. Filhos */}
         <section className="card-outline p-5">
           <span className="section-chip">
             <Baby className="h-3.5 w-3.5" /> 5. Filhos
@@ -700,7 +754,7 @@ const [qualMedicamento, setQualMedicamento] = useState("");
         </button>
         <p className="text-center text-xs text-muted-foreground">
           Ao tocar no botão, o WhatsApp abre com a ficha pronta. Confira suas informações e clique
-          em enviar no WhatsApp. Nenhum dado fica salvo neste site.
+          em enviar no WhatsApp. A ficha preenchida fica disponível no painel administrativo da Juliana.
         </p>
         {imagemUrl && (
           <div className="card-outline flex flex-col items-center gap-3 p-4">
