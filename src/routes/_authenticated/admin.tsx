@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarHeart, Clock, Loader2, RefreshCw, ClipboardList, CalendarDays, CreditCard, Settings, Search, ChevronDown, ChevronUp, Printer, Plus, Trash2 } from "lucide-react";
-import { atualizarAgendamento, criarBloqueio, criarBloqueioRecorrente, listarAgendamentosAdmin, listarBloqueiosAdmin, listarBloqueiosRecorrentesAdmin, removerBloqueio, removerBloqueioRecorrente, souAdmin } from "@/lib/admin-panel.client";
+import { atualizarAgendamento, criarBloqueio, criarBloqueioRecorrente, listarAgendamentosAdmin, listarBloqueiosAdmin, listarBloqueiosRecorrentesAdmin, removerBloqueio, removerBloqueioRecorrente, souAdmin } from "@/lib/admin-panel";
 import { diaDaSemana, formatarData, hojeISO } from "@/lib/agenda-slots";
-import { listarFichasAdmin, listarPagamentosAdmin, type FichaAdmin } from "@/lib/admin-panel.client";
+import { listarFichasAdmin, listarPagamentosAdmin, type FichaAdmin } from "@/lib/admin-panel";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   component: AdminPage,
