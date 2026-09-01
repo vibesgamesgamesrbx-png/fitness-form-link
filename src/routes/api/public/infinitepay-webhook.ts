@@ -1,23 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-/** Webhook da InfinitePay: confirma o pagamento associado ao order_nsu. */
+/**
+ * Webhook da InfinitePay: confirma o pagamento do plano e libera a agenda.
+ * Chame com o cabeçalho `x-webhook-token: <INFINITEPAY_WEBHOOK_SECRET>`
+ * ou `?token=<INFINITEPAY_WEBHOOK_SECRET>`.
+ */
 const payloadSchema = z.object({
-  order_nsu: z.string().min(1).max(200),
+  // identificação do agendamento (qualquer um dos campos abaixo)
+  agendamento_id: z.string().uuid().optional(),
+  whatsapp: z.string().min(8).max(20).optional(),
+  // status do pagamento na InfinitePay
+  status: z.string().max(40).optional(),
   amount: z.union([z.number(), z.string()]).optional(),
-  paid_amount: z.union([z.number(), z.string()]).optional(),
-  transaction_nsu: z.string().optional(),
-  invoice_slug: z.string().optional(),
-  receipt_url: z.string().optional(),
-  items: z.array(z.unknown()).optional(),
-}).passthrough();
+});
 
-function valorNumero(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value !== "string") return null;
-  const n = Number(value.replace(",", "."));
-  return Number.isFinite(n) ? n : null;
-}
+const STATUS_PAGO = ["paid", "approved", "succeeded", "success", "pago", "confirmed"];
 
 export const Route = createFileRoute("/api/public/infinitepay-webhook")({
   server: {
@@ -31,45 +29,44 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
         if (token !== secret) return new Response("Não autorizado", { status: 401 });
 
         let bruto: unknown;
-        try { bruto = await request.json(); } catch { return new Response("Corpo inválido", { status: 400 }); }
+        try {
+          bruto = await request.json();
+        } catch {
+          return new Response("Corpo inválido", { status: 400 });
+        }
+
         const parsed = payloadSchema.safeParse(bruto);
         if (!parsed.success) return new Response("Dados inválidos", { status: 400 });
         const dados = parsed.data;
-        const supabase = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 
-        // order_nsu deve ser o UUID do agendamento criado para este checkout.
-        // Isso evita localizar pedidos apenas por WhatsApp.
-        const { data: agendamento, error: buscaError } = await supabase
+        const status = (dados.status ?? "paid").toLowerCase();
+        if (!STATUS_PAGO.includes(status)) {
+          return Response.json({ ok: true, ignorado: status });
+        }
+
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+        let query = supabaseAdmin
           .from("agendamentos")
-          .select("id, status_pagamento")
-          .eq("id", dados.order_nsu)
-          .maybeSingle();
+          .update({ status_pagamento: "pago", status_agendamento: "confirmado" });
 
-        if (buscaError) {
-          console.error("[infinitepay-webhook] busca:", buscaError.message);
-          return new Response("Erro ao localizar pedido", { status: 500 });
-        }
-        if (!agendamento) return Response.json({ ok: true, ignorado: "order_nsu não encontrado" });
-
-        // O valor deve ser validado contra o checkout/plano antes de liberar a agenda.
-        // A validação final do valor depende dos valores oficiais configurados no checkout.
-        const recebido = valorNumero(dados.paid_amount ?? dados.amount);
-        if (recebido === null || recebido <= 0) {
-          return new Response("Valor do pagamento inválido", { status: 400 });
+        if (dados.agendamento_id) {
+          query = query.eq("id", dados.agendamento_id);
+        } else if (dados.whatsapp) {
+          query = query
+            .eq("whatsapp", dados.whatsapp.replace(/\D/g, ""))
+            .eq("status_pagamento", "pendente");
+        } else {
+          return new Response("Informe agendamento_id ou whatsapp", { status: 400 });
         }
 
-        const { error: updateError } = await supabase
-          .from("agendamentos")
-          .update({ status_pagamento: "pago", status_agendamento: "confirmado" })
-          .eq("id", agendamento.id)
-          .eq("status_pagamento", "pendente");
-
-        if (updateError) {
-          console.error("[infinitepay-webhook] atualização:", updateError.message);
-          return new Response("Erro ao confirmar pagamento", { status: 500 });
+        const { data, error } = await query.select("id");
+        if (error) {
+          console.error("[infinitepay-webhook]", error.message);
+          return new Response("Erro ao atualizar", { status: 500 });
         }
 
-        return Response.json({ ok: true, confirmado: true, agendamento_id: agendamento.id });
+        return Response.json({ ok: true, atualizados: data?.length ?? 0 });
       },
     },
   },
