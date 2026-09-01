@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: build-validation
@@ -30,6 +30,3 @@ jobs:
 
       - name: Build TanStack Start application
         run: bun run build
-
-      - name: Apply ficha persistence integration
-        run: python3 scripts/apply_ficha_patch.py
