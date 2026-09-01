@@ -23,9 +23,7 @@ export default function Agenda({ pagamentoId, nome, whatsapp, plano, pagamento, 
   const [salvando, setSalvando] = useState(false);
   const [confirmado, setConfirmado] = useState(false);
 
-  const orderNsu = typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search).get("payment") ?? ""
-    : "";
+  const orderNsu = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("payment") ?? "" : "";
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -45,36 +43,22 @@ export default function Agenda({ pagamentoId, nome, whatsapp, plano, pagamento, 
 
   const confirmar = async () => {
     if (!diaSel || !horaSel || !paymentIdAtual) return;
-    setSalvando(true);
-    setErro("");
+    setSalvando(true); setErro("");
     try {
       const res = await criarAgendamento({ data: { pagamentoId: paymentIdAtual, data: diaSel, horario: horaSel } });
       if (res.ok) {
         setConfirmado(true);
         onConfirmado?.(diaSel, horaSel);
       } else {
-        setErro(res.erro);
-        setHoraSel("");
-        await carregar();
+        setErro(res.erro); setHoraSel(""); await carregar();
       }
     } catch {
       setErro("Não foi possível confirmar agora. Tente novamente.");
-    } finally {
-      setSalvando(false);
-    }
+    } finally { setSalvando(false); }
   };
 
   if (!paymentIdAtual) {
-    return (
-      <Pagamento
-        nome={nome}
-        whatsapp={whatsapp}
-        plano={plano}
-        pagamento={pagamento}
-        orderNsu={orderNsu || undefined}
-        onPaid={(id) => setPaymentIdAtual(id)}
-      />
-    );
+    return <Pagamento nome={nome} whatsapp={whatsapp} plano={plano} pagamento={pagamento} orderNsu={orderNsu || undefined} onPaid={(id) => setPaymentIdAtual(id)} />;
   }
 
   if (confirmado) {
@@ -100,7 +84,7 @@ export default function Agenda({ pagamentoId, nome, whatsapp, plano, pagamento, 
       {dias.length > 0 && (
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {dias.map((d) => {
-            const livre = d.slots.some((s) => !s.ocupado);
+            const livre = d.slots.some((s) => !s.ocupado && !s.bloqueado);
             const ativo = diaSel === d.data;
             return (
               <button key={d.data} type="button" disabled={!livre} onClick={() => { setDiaSel(d.data); setHoraSel(""); }} className={["shrink-0 rounded-xl border px-4 py-3 text-sm transition-colors", ativo ? "border-primary bg-accent font-semibold text-accent-foreground" : "border-border bg-card text-foreground", livre ? "" : "opacity-40"].join(" ")}>
@@ -114,16 +98,21 @@ export default function Agenda({ pagamentoId, nome, whatsapp, plano, pagamento, 
       {diaSel && (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {dias.find((d) => d.data === diaSel)?.slots.map((s) => {
+            const indisponivel = s.ocupado || s.bloqueado;
             const ativo = horaSel === s.horario;
             return (
-              <button key={s.horario} type="button" disabled={s.ocupado} onClick={() => setHoraSel(s.horario)} className={["rounded-xl border px-2 py-3 text-sm transition-all", s.ocupado ? "cursor-not-allowed border-border bg-muted text-muted-foreground line-through opacity-60" : ativo ? "border-primary bg-primary font-bold text-primary-foreground" : "border-border bg-card text-foreground"].join(" ")}>
-                <span className="flex flex-col items-center gap-0.5"><span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {s.horario}</span><span className="text-[10px] uppercase tracking-wide">{s.ocupado ? "Ocupado" : "Disponível"}</span></span>
+              <button key={s.horario} type="button" disabled={indisponivel} onClick={() => setHoraSel(s.horario)} className={["rounded-xl border px-2 py-3 text-sm transition-all", indisponivel ? "cursor-not-allowed border-border bg-muted text-muted-foreground opacity-70" : ativo ? "border-primary bg-primary font-bold text-primary-foreground" : "border-border bg-card text-foreground"].join(" ")}>
+                <span className="flex flex-col items-center gap-0.5">
+                  <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {s.horario}</span>
+                  <span className="text-[10px] uppercase tracking-wide">{s.bloqueado ? "Indisponível" : s.ocupado ? "Ocupado" : "Disponível"}</span>
+                </span>
               </button>
             );
           })}
         </div>
       )}
 
+      {diaSel && <p className="text-center text-xs text-muted-foreground">Os horários em cinza estão ocupados ou indisponíveis.</p>}
       {erro && <p className="text-sm font-semibold text-destructive">{erro}</p>}
 
       {diaSel && horaSel && (
