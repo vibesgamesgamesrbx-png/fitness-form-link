@@ -1,3 +1,5 @@
+import { salvarFichaAnamnese } from "@/lib/fichas.functions";
+
 export type FichaSecao = {
   titulo: string;
   itens: { rotulo: string; valor: string }[];
@@ -23,11 +25,27 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
   return lines;
 }
 
-/** Desenha a ficha preenchida como uma imagem bonita (PNG) e devolve o Blob. */
+/** Desenha a ficha preenchida como PNG e salva uma cópia segura no banco para o painel da Juliana. */
 export async function gerarImagemFicha(
   nome: string,
   secoes: FichaSecao[],
 ): Promise<Blob | null> {
+  try {
+    const whatsapp = secoes
+      .flatMap((s) => s.itens)
+      .find((i) => i.rotulo === "WhatsApp")?.valor ?? "";
+    if (nome.trim() && whatsapp.replace(/\D/g, "").length >= 10) {
+      const salvo = await salvarFichaAnamnese({
+        data: { nome: nome.trim(), whatsapp, secoes },
+      });
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem("juliana_ficha_id", salvo.id);
+      }
+    }
+  } catch (error) {
+    console.error("[ficha] não foi possível salvar no painel:", error);
+  }
+
   const measure = document.createElement("canvas").getContext("2d");
   if (!measure) return null;
 
@@ -35,10 +53,9 @@ export async function gerarImagemFicha(
   const valueFont = "30px Georgia, 'Times New Roman', serif";
   const contentWidth = W - PAD * 2 - 48;
 
-  // 1ª passada: calcular a altura
-  let h = 300; // cabeçalho
+  let h = 300;
   const layout = secoes.map((secao) => {
-    let alturaSecao = 92; // título da seção
+    let alturaSecao = 92;
     const itens = secao.itens.map((item) => {
       measure.font = labelFont;
       const rotulo = item.rotulo;
@@ -52,7 +69,7 @@ export async function gerarImagemFicha(
     h += alturaSecao;
     return { titulo: secao.titulo, itens, alturaSecao };
   });
-  h += 190; // rodapé
+  h += 190;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -60,11 +77,9 @@ export async function gerarImagemFicha(
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  // Fundo
   ctx.fillStyle = "#fffafc";
   ctx.fillRect(0, 0, W, h);
 
-  // Cabeçalho
   const grad = ctx.createLinearGradient(0, 0, W, 240);
   grad.addColorStop(0, "#d6336c");
   grad.addColorStop(1, "#f06595");
@@ -84,7 +99,6 @@ export async function gerarImagemFicha(
   let y = 300;
 
   for (const secao of layout) {
-    // Faixa do título
     ctx.fillStyle = "#fce4ec";
     ctx.beginPath();
     ctx.roundRect(PAD, y - 44, W - PAD * 2, 62, 16);
@@ -105,7 +119,6 @@ export async function gerarImagemFicha(
         ctx.fillText(linha, PAD + 24, y);
         y += 40;
       }
-      // Linha pontilhada
       ctx.strokeStyle = "#f3cdd9";
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 8]);
@@ -119,7 +132,6 @@ export async function gerarImagemFicha(
     y += 24;
   }
 
-  // Rodapé
   ctx.fillStyle = "#fce4ec";
   ctx.fillRect(0, h - 130, W, 130);
   ctx.textAlign = "center";
