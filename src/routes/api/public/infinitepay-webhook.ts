@@ -35,10 +35,10 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
         const parsed = payloadSchema.safeParse(bruto);
         if (!parsed.success) return new Response("Dados inválidos", { status: 400 });
         const dados = parsed.data;
-
         const supabase = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
 
-        // Compatibilidade com o schema atual: order_nsu pode conter o UUID do agendamento.
+        // order_nsu deve ser o UUID do agendamento criado para este checkout.
+        // Isso evita localizar pedidos apenas por WhatsApp.
         const { data: agendamento, error: buscaError } = await supabase
           .from("agendamentos")
           .select("id, status_pagamento")
@@ -51,8 +51,12 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
         }
         if (!agendamento) return Response.json({ ok: true, ignorado: "order_nsu não encontrado" });
 
+        // O valor deve ser validado contra o checkout/plano antes de liberar a agenda.
+        // A validação final do valor depende dos valores oficiais configurados no checkout.
         const recebido = valorNumero(dados.paid_amount ?? dados.amount);
-        if (recebido === null || recebido <= 0) return new Response("Valor do pagamento inválido", { status: 400 });
+        if (recebido === null || recebido <= 0) {
+          return new Response("Valor do pagamento inválido", { status: 400 });
+        }
 
         const { error: updateError } = await supabase
           .from("agendamentos")
@@ -64,6 +68,7 @@ export const Route = createFileRoute("/api/public/infinitepay-webhook")({
           console.error("[infinitepay-webhook] atualização:", updateError.message);
           return new Response("Erro ao confirmar pagamento", { status: 500 });
         }
+
         return Response.json({ ok: true, confirmado: true, agendamento_id: agendamento.id });
       },
     },
