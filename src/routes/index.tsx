@@ -12,9 +12,6 @@ import {
   Send,
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
-import { salvarFichaAnamnese } from "@/lib/fichas.functions";
-import Planos, { LINKS_CARTAO } from "@/components/Planos";
-import Agenda from "@/components/Agenda";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -86,8 +83,6 @@ function Index() {
   const [sono, setSono] = useState("");
   const [alimentacao, setAlimentacao] = useState("");
   const [adicionais, setAdicionais] = useState("");
-  const [plano, setPlano] = useState("");
-  const [pagamento, setPagamento] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [whatsappUrl, setWhatsappUrl] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
@@ -124,8 +119,6 @@ function Index() {
     if (objetivos.length === 0) errs.push("Selecione pelo menos um objetivo com o treino.");
     if (problemaSaude === "Sim" && !qualProblema.trim()) errs.push("Descreva qual problema de saúde você precisa destacar.");
     if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
-    if (!plano) errs.push("Escolha o plano desejado na seção Plano e Pagamento.");
-    if (!pagamento) errs.push("Escolha a forma de pagamento.");
     setErrors(errs);
     if (errs.length > 0) {
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -165,33 +158,13 @@ function Index() {
       { titulo: "Sono", itens: [{ rotulo: "Qualidade do sono", valor: na(sono) }] },
       { titulo: "Alimentação", itens: [{ rotulo: "Como se alimenta", valor: na(alimentacao) }] },
       { titulo: "Informações adicionais", itens: [{ rotulo: "Observações", valor: na(adicionais) }] },
-      { titulo: "Plano e pagamento", itens: [
-        { rotulo: "Plano", valor: na(plano) },
-        { rotulo: "Pagamento", valor: na(pagamento) },
-        ...(pagamento?.startsWith("Cartão") && LINKS_CARTAO[plano] ? [{ rotulo: "Link de pagamento", valor: LINKS_CARTAO[plano] }] : []),
-      ]},
     ];
 
-    try {
-      await salvarFichaAnamnese({ data: { nome, whatsapp: phoneDigits, secoes } });
-    } catch (error) {
-      const mensagem = error instanceof Error ? error.message : "Não foi possível salvar a ficha agora.";
-      setErrors([mensagem]);
-      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-      return;
-    }
-
-    const observacaoPagamento = pagamento === "Pix"
-      ? "Pagamento via Pix Copia e Cola disponível na página da ficha."
-      : pagamento?.startsWith("Cartão") && LINKS_CARTAO[plano]
-        ? `Pague por cartão aqui: ${LINKS_CARTAO[plano]}`
-        : "";
     const message = [
       "🏋️ NOVA FICHA DE ANAMNESE", "",
       ...secoes.flatMap((s) => [
-        s.titulo === "Plano e pagamento" ? "💳 PLANO E PAGAMENTO" : s.titulo.toUpperCase(),
+        s.titulo.toUpperCase(),
         ...s.itens.map((i) => `${i.rotulo}: ${i.valor}`),
-        ...(s.titulo === "Plano e pagamento" && observacaoPagamento ? [observacaoPagamento] : []),
         "",
       ]),
       "Ficha preenchida pelo site. 💗",
@@ -279,16 +252,12 @@ function Index() {
 
         <section className="card-outline p-5"><span className="section-chip"><MessageCircleHeart className="h-3.5 w-3.5" /> 9. Informações Adicionais</span><label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">Há algo mais que você acha importante compartilhar?<textarea className="field-input min-h-24 resize-y" value={adicionais} onChange={(e) => setAdicionais(e.target.value)} placeholder="Qualquer informação relevante para o seu treino..." maxLength={1000} /></label></section>
 
-        <section className="card-outline p-5"><span className="section-chip"><Heart className="h-3.5 w-3.5" /> 10. Plano e Pagamento</span><Planos plano={plano} setPlano={setPlano} pagamento={pagamento} setPagamento={setPagamento} /></section>
-
         {errors.length > 0 && <div className="card-outline border-destructive/60 p-4" role="alert"><p className="text-sm font-semibold text-destructive">Quase lá! Verifique os campos abaixo:</p><ul className="mt-1 list-inside list-disc text-sm text-destructive/90">{errors.map((err) => <li key={err}>{err}</li>)}</ul></div>}
 
         <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-whatsapp px-6 py-4 text-lg font-bold uppercase tracking-wide text-whatsapp-foreground shadow-lg transition-transform active:scale-[0.98]"><Send className="h-5 w-5" />Enviar ficha pelo WhatsApp</button>
         {imagemUrl && <div className="card-outline flex flex-col items-center gap-3 p-4"><p className="text-center text-sm text-muted-foreground">Sua ficha em imagem está pronta 💗</p><img src={imagemUrl} alt="Ficha de anamnese preenchida" className="w-full rounded-xl border border-border" /><a href={imagemUrl} download="ficha-anamnese.png" className="text-sm font-semibold text-primary underline underline-offset-4">Baixar a imagem da ficha</a></div>}
         {whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-center text-sm font-semibold text-primary underline underline-offset-4">{enviado ? "Se o WhatsApp não abrir, toque aqui para enviar a ficha" : "Abrir o WhatsApp"}</a>}
       </form>
-
-      {enviado && <div className="mt-6 px-5"><Agenda nome={nome} whatsapp={whatsappCliente.replace(/\D/g, "")} plano={plano} pagamento={pagamento} /></div>}
 
       <footer className="mt-10 px-5 text-center"><div className="divider-heart mx-auto max-w-xs text-sm"><Heart className="h-4 w-4 shrink-0" fill="currentColor" /></div><p className="mt-4 font-display text-xl italic text-primary">Juntas somos mais fortes</p><p className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">@julianatruglia · (11) 94011-0447</p></footer>
     </div>
