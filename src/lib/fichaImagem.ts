@@ -1,5 +1,3 @@
-import { salvarFichaAnamnese } from "@/lib/fichas.functions";
-
 export type FichaSecao = {
   titulo: string;
   itens: { rotulo: string; valor: string }[];
@@ -30,22 +28,6 @@ export async function gerarImagemFicha(
   nome: string,
   secoes: FichaSecao[],
 ): Promise<Blob | null> {
-  try {
-    const whatsapp = secoes
-      .flatMap((s) => s.itens)
-      .find((i) => i.rotulo === "WhatsApp")?.valor ?? "";
-    if (nome.trim() && whatsapp.replace(/\D/g, "").length >= 10) {
-      const salvo = await salvarFichaAnamnese({
-        data: { nome: nome.trim(), whatsapp, secoes },
-      });
-      if (typeof window !== "undefined") {
-        window.sessionStorage.setItem("juliana_ficha_id", salvo.id);
-      }
-    }
-  } catch (error) {
-    console.error("[ficha] não foi possível salvar no painel:", error);
-  }
-
   const measure = document.createElement("canvas").getContext("2d");
   if (!measure) return null;
 
