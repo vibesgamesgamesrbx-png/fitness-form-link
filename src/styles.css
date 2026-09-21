@@ -101,11 +101,6 @@
 }
 
 @utility field-input {
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
-  user-select: text;
-  -webkit-user-select: text;
   width: 100%;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-input);
@@ -114,7 +109,7 @@
   font-size: 1rem;
   color: var(--color-foreground);
   transition: border-color 150ms, box-shadow 150ms;
-  &:focus-visible {
+  &:focus {
     outline: none;
     border-color: var(--color-ring);
     box-shadow: 0 0 0 3px oklch(0.56 0.21 355 / 0.18);
@@ -126,10 +121,6 @@
 }
 
 @utility radio-card {
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.65rem;
