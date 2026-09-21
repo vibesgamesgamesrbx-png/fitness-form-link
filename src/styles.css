@@ -179,3 +179,53 @@
     background: linear-gradient(90deg, transparent, var(--color-rosegold), transparent);
   }
 }
+
+
+/* Form interaction hardening: keep every native control above decorative layers. */
+input,
+textarea,
+select,
+button,
+label,
+fieldset {
+  pointer-events: auto;
+}
+
+input,
+textarea,
+select {
+  position: relative;
+  z-index: 20;
+}
+
+.radio-card {
+  position: relative;
+  z-index: 20;
+}
+
+.radio-dot {
+  appearance: auto !important;
+  width: 1rem !important;
+  height: 1rem !important;
+  display: inline-block !important;
+  position: relative;
+  z-index: 30;
+  cursor: pointer;
+}
+
+.field-input {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto !important;
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
+}
+
+textarea.field-input {
+  cursor: text;
+}
+
+label {
+  cursor: pointer;
+}
