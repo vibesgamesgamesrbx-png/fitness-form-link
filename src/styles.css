@@ -101,6 +101,11 @@
 }
 
 @utility field-input {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
   width: 100%;
   border-radius: var(--radius-md);
   border: 1.5px solid var(--color-input);
@@ -121,6 +126,10 @@
 }
 
 @utility radio-card {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.65rem;
