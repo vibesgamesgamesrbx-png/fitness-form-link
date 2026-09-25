@@ -178,22 +178,12 @@ function Index() {
       const objectUrl = URL.createObjectURL(blob);
       setImagemUrl(objectUrl);
       const file = new File([blob], `ficha-anamnese-${nome.trim() || "cliente"}.png`, { type: "image/png" });
-      if (typeof navigator !== "undefined" && navigator.canShare?.({ files: [file] }) && navigator.share) {
-        try {
-          await navigator.share({ files: [file], text: `Ficha de anamnese — ${nome.trim() || "Cliente"}` });
-          setEnviado(true);
-          return;
-        } catch {
-          // usuária cancelou ou não deu — segue para o WhatsApp com o texto
-        }
-      } else {
-        const dl = document.createElement("a");
-        dl.href = objectUrl;
-        dl.download = file.name;
-        document.body.appendChild(dl);
-        dl.click();
-        dl.remove();
-      }
+      const dl = document.createElement("a");
+      dl.href = objectUrl;
+      dl.download = file.name;
+      document.body.appendChild(dl);
+      dl.click();
+      dl.remove();
     }
     setEnviado(true);
     const anchor = document.createElement("a");
