@@ -160,39 +160,50 @@ function Index() {
       { titulo: "Informações adicionais", itens: [{ rotulo: "Observações", valor: na(adicionais) }] },
     ];
 
-    const message = [
-      "🏋️ NOVA FICHA DE ANAMNESE", "",
-      ...secoes.flatMap((s) => [
-        s.titulo.toUpperCase(),
-        ...s.itens.map((i) => `${i.rotulo}: ${i.valor}`),
-        "",
-      ]),
-      "Ficha preenchida pelo site. 💗",
-    ].join("\n");
-    const url = `https://wa.me/${TRAINER_WHATSAPP}?text=${encodeURIComponent(message)}`;
-    setWhatsappUrl(url);
+    setWhatsappUrl("");
+    setImagemUrl("");
+    setEnviado(false);
 
     let blob: Blob | null = null;
     try { blob = await gerarImagemFicha(nome, secoes); } catch { blob = null; }
-    if (blob) {
-      const objectUrl = URL.createObjectURL(blob);
-      setImagemUrl(objectUrl);
-      const file = new File([blob], `ficha-anamnese-${nome.trim() || "cliente"}.png`, { type: "image/png" });
-      const dl = document.createElement("a");
-      dl.href = objectUrl;
-      dl.download = file.name;
-      document.body.appendChild(dl);
-      dl.click();
-      dl.remove();
+
+    if (!blob) {
+      setErrors(["Não foi possível gerar a ficha em imagem. Tente novamente."]);
+      return;
     }
+
+    const objectUrl = URL.createObjectURL(blob);
+    const imageFile = new File(
+      [blob],
+      `ficha-anamnese-${nome.trim() || "cliente"}.png`,
+      { type: "image/png" },
+    );
+    setImagemUrl(objectUrl);
     setEnviado(true);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
+
+    // A ficha é compartilhada como ARQUIVO/IMAGEM, sem colocar os dados no texto do WhatsApp.
+    try {
+      if (
+        typeof navigator.share === "function" &&
+        (!navigator.canShare || navigator.canShare({ files: [imageFile] }))
+      ) {
+        await navigator.share({
+          title: "Ficha de Anamnese",
+          files: [imageFile],
+        });
+        return;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+
+    // Se o navegador não oferecer compartilhamento de arquivos, a imagem fica disponível para anexar no WhatsApp.
+    const dl = document.createElement("a");
+    dl.href = objectUrl;
+    dl.download = imageFile.name;
+    document.body.appendChild(dl);
+    dl.click();
+    dl.remove();
   };
 
   return (
@@ -246,7 +257,12 @@ function Index() {
 
         <button type="submit" className="flex w-full items-center justify-center gap-2 rounded-2xl bg-whatsapp px-6 py-4 text-lg font-bold uppercase tracking-wide text-whatsapp-foreground shadow-lg transition-transform active:scale-[0.98]"><Send className="h-5 w-5" />Enviar ficha pelo WhatsApp</button>
         {imagemUrl && <div className="card-outline flex flex-col items-center gap-3 p-4"><p className="text-center text-sm text-muted-foreground">Sua ficha em imagem está pronta 💗</p><img src={imagemUrl} alt="Ficha de anamnese preenchida" className="w-full rounded-xl border border-border" /><a href={imagemUrl} download="ficha-anamnese.png" className="text-sm font-semibold text-primary underline underline-offset-4">Baixar a imagem da ficha</a></div>}
-        {whatsappUrl && <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="text-center text-sm font-semibold text-primary underline underline-offset-4">{enviado ? "Se o WhatsApp não abrir, toque aqui para enviar a ficha" : "Abrir o WhatsApp"}</a>}
+        {enviado && <div className="card-outline p-4 text-center">
+  <p className="text-sm font-semibold text-primary">Ficha gerada em imagem 💗</p>
+  <p className="mt-1 text-sm text-muted-foreground">
+    No celular, escolha o WhatsApp na tela de compartilhamento. No computador, se essa tela não aparecer, baixe a imagem e anexe-a na conversa.
+  </p>
+</div>}
       </form>
 
       <footer className="mt-10 px-5 text-center"><div className="divider-heart mx-auto max-w-xs text-sm"><Heart className="h-4 w-4 shrink-0" fill="currentColor" /></div><p className="mt-4 font-display text-xl italic text-primary">Juntas somos mais fortes</p><p className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">@julianatruglia · (11) 94011-0447</p></footer>
