@@ -229,3 +229,33 @@ textarea.field-input {
 label {
   cursor: pointer;
 }
+
+
+/* Garantia extra para uso em computador: os campos precisam sempre receber foco e texto. */
+html, body, #root {
+  pointer-events: auto !important;
+}
+form {
+  position: relative;
+  z-index: 1;
+}
+form input,
+form textarea,
+form select {
+  pointer-events: auto !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  touch-action: manipulation;
+  cursor: text !important;
+}
+form input:focus,
+form textarea:focus,
+form select:focus {
+  outline: 2px solid var(--color-ring) !important;
+  outline-offset: 1px;
+}
+form button,
+form label,
+form fieldset {
+  pointer-events: auto !important;
+}
