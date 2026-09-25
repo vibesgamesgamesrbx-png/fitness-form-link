@@ -177,7 +177,6 @@ function Index() {
       { titulo: "Informações adicionais", itens: [{ rotulo: "Observações", valor: na(adicionais) }] },
     ];
 
-    setWhatsappUrl("");
     setImagemUrl("");
     setEnviado(false);
 
