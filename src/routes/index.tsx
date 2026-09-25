@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Heart,
   Dumbbell,
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const TRAINER_WHATSAPP = "5511940110447";
+
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2020;
 const MIN_AGE = 5;
@@ -63,38 +63,28 @@ function maskPhone(value: string) {
 }
 
 function Index() {
-  const [nome, setNome] = useState("");
-  const [whatsappCliente, setWhatsappCliente] = useState("");
+  // Apenas os controles que mudam a estrutura da tela ficam em React state.
+  // Campos de texto são nativos e lidos com FormData no envio, evitando renderização a cada tecla.
   const [nascimento, setNascimento] = useState("");
   const [idadeManual, setIdadeManual] = useState("");
   const [objetivos, setObjetivos] = useState<string[]>([]);
   const [treinaAtualmente, setTreinaAtualmente] = useState("");
-  const [tempoParada, setTempoParada] = useState("");
   const [jaTreinou, setJaTreinou] = useState("");
-  const [tempoTreinou, setTempoTreinou] = useState("");
   const [problemaSaude, setProblemaSaude] = useState("");
-  const [qualProblema, setQualProblema] = useState("");
   const [tomaMedicamento, setTomaMedicamento] = useState("");
-  const [qualMedicamento, setQualMedicamento] = useState("");
   const [tomaCaneta, setTomaCaneta] = useState("");
-  const [qualCaneta, setQualCaneta] = useState("");
   const [temFilhos, setTemFilhos] = useState("");
-  const [quantosFilhos, setQuantosFilhos] = useState("");
   const [sono, setSono] = useState("");
-  const [alimentacao, setAlimentacao] = useState("");
-  const [adicionais, setAdicionais] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
-  const [whatsappUrl, setWhatsappUrl] = useState("");
   const [imagemUrl, setImagemUrl] = useState("");
   const [enviado, setEnviado] = useState(false);
 
-  const idadeAuto = useMemo(() => calcAge(nascimento), [nascimento]);
-  const idade = idadeAuto !== null ? String(idadeAuto) : idadeManual;
+  const idade = calcAge(nascimento) !== null ? String(calcAge(nascimento)) : idadeManual;
 
   const handleNascimento = (value: string) => {
     setNascimento(value);
     const age = calcAge(value);
-    if (age !== null) setIdadeManual(String(age));
+    setIdadeManual(age !== null ? String(age) : "");
   };
 
   const handleIdade = (value: string) => {
@@ -103,22 +93,49 @@ function Index() {
     setIdadeManual(String(Math.min(Number(digits), MAX_AGE)));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+    const value = (name: string) => String(data.get(name) ?? "").trim();
+
+    const nome = value("nome");
+    const whatsappCliente = value("whatsapp");
+    const nascimentoValue = value("nascimento");
+    const idadeValue = value("idade");
+    const objetivosForm = data.getAll("objetivo").map(String);
+    const treina = value("treina");
+    const tempoParada = value("tempoParada");
+    const jaTreinouValue = value("jaTreinou");
+    const tempoTreinou = value("tempoTreinou");
+    const problema = value("problemaSaude");
+    const qualProblema = value("qualProblema");
+    const medicamento = value("medicamento");
+    const qualMedicamento = value("qualMedicamento");
+    const caneta = value("caneta");
+    const qualCaneta = value("qualCaneta");
+    const filhos = value("filhos");
+    const quantosFilhos = value("quantosFilhos");
+    const sonoValue = value("sono");
+    const alimentacao = value("alimentacao");
+    const adicionais = value("adicionais");
+
     const errs: string[] = [];
     const phoneDigits = whatsappCliente.replace(/\D/g, "");
-    const idadeNum = Number(idade);
-    if (!nome.trim()) errs.push("Informe seu nome completo.");
+    const idadeNum = Number(idadeValue);
+
+    if (!nome) errs.push("Informe seu nome completo.");
     if (phoneDigits.length < 10) errs.push("Informe um WhatsApp válido com DDD.");
-    if (!nascimento) errs.push("Informe sua data de nascimento.");
+    if (!nascimentoValue) errs.push("Informe sua data de nascimento.");
     else {
-      const year = Number(nascimento.split("-")[0]);
+      const year = Number(nascimentoValue.split("-")[0]);
       if (year < MIN_YEAR || year > MAX_YEAR) errs.push(`A data de nascimento deve ser entre ${MIN_YEAR} e ${MAX_YEAR}.`);
     }
-    if (!idade || Number.isNaN(idadeNum) || idadeNum < MIN_AGE || idadeNum > MAX_AGE) errs.push(`A idade deve ser entre ${MIN_AGE} e ${MAX_AGE} anos.`);
-    if (objetivos.length === 0) errs.push("Selecione pelo menos um objetivo com o treino.");
-    if (problemaSaude === "Sim" && !qualProblema.trim()) errs.push("Descreva qual problema de saúde você precisa destacar.");
-    if (temFilhos === "Sim" && !quantosFilhos.trim()) errs.push("Informe quantos filhos você tem.");
+    if (!idadeValue || Number.isNaN(idadeNum) || idadeNum < MIN_AGE || idadeNum > MAX_AGE) errs.push(`A idade deve ser entre ${MIN_AGE} e ${MAX_AGE} anos.`);
+    if (objetivosForm.length === 0) errs.push("Selecione pelo menos um objetivo com o treino.");
+    if (problema === "Sim" && !qualProblema) errs.push("Descreva qual problema de saúde você precisa destacar.");
+    if (filhos === "Sim" && !quantosFilhos) errs.push("Informe quantos filhos você tem.");
+
     setErrors(errs);
     if (errs.length > 0) {
       window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -129,33 +146,33 @@ function Index() {
       { titulo: "Dados pessoais", itens: [
         { rotulo: "Nome completo", valor: na(nome) },
         { rotulo: "WhatsApp", valor: na(whatsappCliente) },
-        { rotulo: "Data de nascimento", valor: na(formatBirthdate(nascimento)) },
+        { rotulo: "Data de nascimento", valor: na(formatBirthdate(nascimentoValue)) },
         { rotulo: "Idade", valor: na(idade) },
       ]},
-      { titulo: "Objetivo", itens: [{ rotulo: "Principal objetivo", valor: na(objetivos.join(", ")) }] },
+      { titulo: "Objetivo", itens: [{ rotulo: "Principal objetivo", valor: na(objetivosForm.join(", ")) }] },
       { titulo: "Atividade física", itens: [
-        { rotulo: "Treina atualmente", valor: na(treinaAtualmente) },
-        { rotulo: "Tempo parada", valor: treinaAtualmente === "Não" ? na(tempoParada) : "—" },
-        { rotulo: "Já treinou anteriormente", valor: na(jaTreinou) },
-        { rotulo: "Por quanto tempo", valor: jaTreinou === "Já treinei antes" ? na(tempoTreinou) : "—" },
+        { rotulo: "Treina atualmente", valor: na(treina) },
+        { rotulo: "Tempo parada", valor: treina === "Não" ? na(tempoParada) : "—" },
+        { rotulo: "Já treinou anteriormente", valor: na(jaTreinouValue) },
+        { rotulo: "Por quanto tempo", valor: jaTreinouValue === "Já treinei antes" ? na(tempoTreinou) : "—" },
       ]},
       { titulo: "Saúde", itens: [
-        { rotulo: "Possui problema de saúde", valor: na(problemaSaude) },
-        { rotulo: "Qual", valor: problemaSaude === "Sim" ? na(qualProblema) : "—" },
+        { rotulo: "Possui problema de saúde", valor: na(problema) },
+        { rotulo: "Qual", valor: problema === "Sim" ? na(qualProblema) : "—" },
       ]},
       { titulo: "Medicamentos", itens: [
-        { rotulo: "Toma medicamento atualmente", valor: na(tomaMedicamento) },
-        { rotulo: "Qual medicamento", valor: tomaMedicamento === "Sim" ? na(qualMedicamento) : "—" },
+        { rotulo: "Toma medicamento atualmente", valor: na(medicamento) },
+        { rotulo: "Qual medicamento", valor: medicamento === "Sim" ? na(qualMedicamento) : "—" },
       ]},
       { titulo: "Caneta Emagrecedora", itens: [
-        { rotulo: "Utiliza caneta emagrecedora", valor: na(tomaCaneta) },
-        { rotulo: "Qual", valor: tomaCaneta === "Sim" ? na(qualCaneta) : "—" },
+        { rotulo: "Utiliza caneta emagrecedora", valor: na(caneta) },
+        { rotulo: "Qual", valor: caneta === "Sim" ? na(qualCaneta) : "—" },
       ]},
       { titulo: "Filhos", itens: [
-        { rotulo: "Possui filhos", valor: na(temFilhos) },
-        { rotulo: "Quantidade", valor: temFilhos === "Sim" ? na(quantosFilhos) : "—" },
+        { rotulo: "Possui filhos", valor: na(filhos) },
+        { rotulo: "Quantidade", valor: filhos === "Sim" ? na(quantosFilhos) : "—" },
       ]},
-      { titulo: "Sono", itens: [{ rotulo: "Qualidade do sono", valor: na(sono) }] },
+      { titulo: "Sono", itens: [{ rotulo: "Qualidade do sono", valor: na(sonoValue) }] },
       { titulo: "Alimentação", itens: [{ rotulo: "Como se alimenta", valor: na(alimentacao) }] },
       { titulo: "Informações adicionais", itens: [{ rotulo: "Observações", valor: na(adicionais) }] },
     ];
@@ -224,34 +241,34 @@ function Index() {
         <section className="card-outline p-5"><span className="section-chip"><User className="h-3.5 w-3.5" /> 1. Dados Pessoais</span><div className="mt-4 flex flex-col gap-4">
           <label className="flex flex-col gap-1.5 text-sm font-medium">Nome completo *<input className="field-input" value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome completo" maxLength={100} autoComplete="name" /></label>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3"><label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">Data de nascimento *<input type="date" className="field-input" value={nascimento} onChange={(e) => handleNascimento(e.target.value)} min={`${MIN_YEAR}-01-01`} max={`${MAX_YEAR}-12-31`} /></label><label className="flex w-24 shrink-0 flex-col gap-1.5 text-sm font-medium">Idade *<input className="field-input" value={idade} onChange={(e) => handleIdade(e.target.value)} inputMode="numeric" placeholder="00" /></label></div>
-          <label className="flex flex-col gap-1.5 text-sm font-medium">Seu WhatsApp (com DDD) *<input className="field-input" value={whatsappCliente} onChange={(e) => setWhatsappCliente(maskPhone(e.target.value))} placeholder="(11) 99999-9999" inputMode="tel" autoComplete="tel" /></label>
+          <label className="flex flex-col gap-1.5 text-sm font-medium">Seu WhatsApp (com DDD) *<input className="field-input"  placeholder="(11) 99999-9999" inputMode="tel" autoComplete="tel" /></label>
         </div></section>
 
-        <section className="card-outline p-5"><span className="section-chip"><Target className="h-3.5 w-3.5" /> 2. Objetivo</span><fieldset className="mt-4"><legend className="mb-2 text-sm font-medium">Qual o seu principal objetivo com o treino? *</legend><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{OBJETIVOS_OPCOES.map((opt) => { const checked = objetivos.includes(opt); return <label key={opt} className={["radio-card", checked ? "border-primary bg-accent font-semibold text-accent-foreground" : ""].join(" ")}><input type="checkbox" className="radio-dot" checked={checked} onChange={() => setObjetivos((prev) => prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt])} />{opt}</label>; })}</div></fieldset></section>
+        <section className="card-outline p-5"><span className="section-chip"><Target className="h-3.5 w-3.5" /> 2. Objetivo</span><fieldset className="mt-4"><legend className="mb-2 text-sm font-medium">Qual o seu principal objetivo com o treino? *</legend><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{OBJETIVOS_OPCOES.map((opt) => { const checked = objetivos.includes(opt); return <label key={opt} className={["radio-card", checked ? "border-primary bg-accent font-semibold text-accent-foreground" : ""].join(" ")}><input type="checkbox" name="objetivo" value={opt} className="radio-dot" checked={checked} onChange={() => setObjetivos((prev) => prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt])} />{opt}</label>; })}</div></fieldset></section>
 
         <section className="card-outline p-5"><span className="section-chip"><Dumbbell className="h-3.5 w-3.5" /> 3. Atividade Física</span><div className="mt-4 flex flex-col gap-4">
-          <fieldset><legend className="mb-2 text-sm font-medium">Você treina musculação atualmente?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="treina" className="radio-dot" checked={treinaAtualmente === opt} onChange={() => setTreinaAtualmente(opt)} />{opt}</label>)}</div></fieldset>
-          {treinaAtualmente === "Não" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se não, há quanto tempo está parada?<input className="field-input" value={tempoParada} onChange={(e) => setTempoParada(e.target.value)} placeholder="Ex.: 6 meses, 2 anos..." maxLength={100} /></label>}
-          <fieldset><legend className="mb-2 text-sm font-medium">Você já treinou anteriormente?</legend><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{["Nunca treinei", "Já treinei antes"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="jatreinou" className="radio-dot" checked={jaTreinou === opt} onChange={() => setJaTreinou(opt)} />{opt}</label>)}</div></fieldset>
-          {jaTreinou === "Já treinei antes" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se já treinou, por quanto tempo?<input className="field-input" value={tempoTreinou} onChange={(e) => setTempoTreinou(e.target.value)} placeholder="Ex.: 1 ano, 3 anos..." maxLength={100} /></label>}
+          <fieldset><legend className="mb-2 text-sm font-medium">Você treina musculação atualmente?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="treina" value={opt} className="radio-dot" checked={treinaAtualmente === opt} onChange={() => setTreinaAtualmente(opt)} />{opt}</label>)}</div></fieldset>
+          {treinaAtualmente === "Não" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se não, há quanto tempo está parada?<input className="field-input" name="tempoParada" placeholder="Ex.: 6 meses, 2 anos..." maxLength={100} /></label>}
+          <fieldset><legend className="mb-2 text-sm font-medium">Você já treinou anteriormente?</legend><div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{["Nunca treinei", "Já treinei antes"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="jaTreinou" value={opt} className="radio-dot" checked={jaTreinou === opt} onChange={() => setJaTreinou(opt)} />{opt}</label>)}</div></fieldset>
+          {jaTreinou === "Já treinei antes" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se já treinou, por quanto tempo?<input className="field-input" name="tempoTreinou" placeholder="Ex.: 1 ano, 3 anos..." maxLength={100} /></label>}
         </div></section>
 
         <section className="card-outline p-5"><span className="section-chip"><Heart className="h-3.5 w-3.5" /> 4. Saúde</span><div className="mt-4 flex flex-col gap-4">
-          <fieldset><legend className="mb-2 text-sm font-medium">Você tem algum problema de saúde que precise destacar?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="saude" className="radio-dot" checked={problemaSaude === opt} onChange={() => setProblemaSaude(opt)} />{opt}</label>)}</div></fieldset>
-          {problemaSaude === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se sim, qual? *<textarea className="field-input min-h-20 resize-y" value={qualProblema} onChange={(e) => setQualProblema(e.target.value)} placeholder="Descreva o problema de saúde..." maxLength={500} /></label>}
-          <fieldset><legend className="mb-2 text-sm font-medium">Você toma algum medicamento atualmente?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="medicamento" className="radio-dot" checked={tomaMedicamento === opt} onChange={() => setTomaMedicamento(opt)} />{opt}</label>)}</div></fieldset>
-          {tomaMedicamento === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se sim, qual medicamento?<input className="field-input" value={qualMedicamento} onChange={(e) => setQualMedicamento(e.target.value)} placeholder="Informe o nome do medicamento..." maxLength={300} /></label>}
+          <fieldset><legend className="mb-2 text-sm font-medium">Você tem algum problema de saúde que precise destacar?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="problemaSaude" value={opt} className="radio-dot" checked={problemaSaude === opt} onChange={() => setProblemaSaude(opt)} />{opt}</label>)}</div></fieldset>
+          {problemaSaude === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se sim, qual? *<textarea className="field-input min-h-20 resize-y" name="qualProblema" placeholder="Descreva o problema de saúde..." maxLength={500} /></label>}
+          <fieldset><legend className="mb-2 text-sm font-medium">Você toma algum medicamento atualmente?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="medicamento" value={opt} className="radio-dot" checked={tomaMedicamento === opt} onChange={() => setTomaMedicamento(opt)} />{opt}</label>)}</div></fieldset>
+          {tomaMedicamento === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se sim, qual medicamento?<input className="field-input" name="qualMedicamento" placeholder="Informe o nome do medicamento..." maxLength={300} /></label>}
         </div></section>
 
-        <section className="card-outline p-5"><span className="section-chip"><Heart className="h-3.5 w-3.5" /> 5. Caneta Emagrecedora</span><div className="mt-4 flex flex-col gap-4"><fieldset><legend className="mb-2 text-sm font-medium">Você utiliza alguma caneta emagrecedora atualmente?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="caneta-emagrecedora" className="radio-dot" checked={tomaCaneta === opt} onChange={() => setTomaCaneta(opt)} />{opt}</label>)}</div></fieldset>{tomaCaneta === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se sim, qual?<input className="field-input" value={qualCaneta} onChange={(e) => setQualCaneta(e.target.value)} placeholder="Informe o nome..." maxLength={200} /></label>}</div></section>
+        <section className="card-outline p-5"><span className="section-chip"><Heart className="h-3.5 w-3.5" /> 5. Caneta Emagrecedora</span><div className="mt-4 flex flex-col gap-4"><fieldset><legend className="mb-2 text-sm font-medium">Você utiliza alguma caneta emagrecedora atualmente?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="caneta" value={opt} className="radio-dot" checked={tomaCaneta === opt} onChange={() => setTomaCaneta(opt)} />{opt}</label>)}</div></fieldset>{tomaCaneta === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Se sim, qual?<input className="field-input" name="qualCaneta" placeholder="Informe o nome..." maxLength={200} /></label>}</div></section>
 
-        <section className="card-outline p-5"><span className="section-chip"><Baby className="h-3.5 w-3.5" /> 6. Filhos</span><div className="mt-4 flex flex-col gap-4"><fieldset><legend className="mb-2 text-sm font-medium">Você tem filhos?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="filhos" className="radio-dot" checked={temFilhos === opt} onChange={() => setTemFilhos(opt)} />{opt}</label>)}</div></fieldset>{temFilhos === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Quantos? *<input className="field-input w-28" value={quantosFilhos} onChange={(e) => { const d = e.target.value.replace(/\D/g, "").slice(0, 2); setQuantosFilhos(d === "" ? "" : String(Math.min(Number(d), 20))); }} inputMode="numeric" placeholder="0" /></label>}</div></section>
+        <section className="card-outline p-5"><span className="section-chip"><Baby className="h-3.5 w-3.5" /> 6. Filhos</span><div className="mt-4 flex flex-col gap-4"><fieldset><legend className="mb-2 text-sm font-medium">Você tem filhos?</legend><div className="grid grid-cols-2 gap-2">{["Sim", "Não"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="filhos" value={opt} className="radio-dot" checked={temFilhos === opt} onChange={() => setTemFilhos(opt)} />{opt}</label>)}</div></fieldset>{temFilhos === "Sim" && <label className="flex flex-col gap-1.5 text-sm font-medium">Quantos? *<input className="field-input w-28" name="quantosFilhos" inputMode="numeric" placeholder="0" /></label>}</div></section>
 
-        <section className="card-outline p-5"><span className="section-chip"><MoonStar className="h-3.5 w-3.5" /> 7. Sono</span><fieldset className="mt-4"><legend className="mb-2 text-sm font-medium">Como você avalia a qualidade do seu sono?</legend><div className="flex flex-col gap-2">{["Durmo bem", "Durmo razoavelmente", "Tenho dificuldades para dormir"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="sono" className="radio-dot" checked={sono === opt} onChange={() => setSono(opt)} />{opt}</label>)}</div></fieldset></section>
+        <section className="card-outline p-5"><span className="section-chip"><MoonStar className="h-3.5 w-3.5" /> 7. Sono</span><fieldset className="mt-4"><legend className="mb-2 text-sm font-medium">Como você avalia a qualidade do seu sono?</legend><div className="flex flex-col gap-2">{["Durmo bem", "Durmo razoavelmente", "Tenho dificuldades para dormir"].map((opt) => <label key={opt} className="radio-card"><input type="radio" name="sono" value={opt} className="radio-dot" checked={sono === opt} onChange={() => setSono(opt)} />{opt}</label>)}</div></fieldset></section>
 
-        <section className="card-outline p-5"><span className="section-chip"><Salad className="h-3.5 w-3.5" /> 8. Alimentação</span><label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">Como você descreveria sua alimentação atualmente?<textarea className="field-input min-h-24 resize-y" value={alimentacao} onChange={(e) => setAlimentacao(e.target.value)} placeholder="Ex.: como de 3 em 3 horas, pulo café da manhã..." maxLength={500} /></label></section>
+        <section className="card-outline p-5"><span className="section-chip"><Salad className="h-3.5 w-3.5" /> 8. Alimentação</span><label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">Como você descreveria sua alimentação atualmente?<textarea className="field-input min-h-24 resize-y" name="alimentacao" placeholder="Ex.: como de 3 em 3 horas, pulo café da manhã..." maxLength={500} /></label></section>
 
-        <section className="card-outline p-5"><span className="section-chip"><MessageCircleHeart className="h-3.5 w-3.5" /> 9. Informações Adicionais</span><label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">Há algo mais que você acha importante compartilhar?<textarea className="field-input min-h-24 resize-y" value={adicionais} onChange={(e) => setAdicionais(e.target.value)} placeholder="Qualquer informação relevante para o seu treino..." maxLength={1000} /></label></section>
+        <section className="card-outline p-5"><span className="section-chip"><MessageCircleHeart className="h-3.5 w-3.5" /> 9. Informações Adicionais</span><label className="mt-4 flex flex-col gap-1.5 text-sm font-medium">Há algo mais que você acha importante compartilhar?<textarea className="field-input min-h-24 resize-y" name="adicionais" placeholder="Qualquer informação relevante para o seu treino..." maxLength={1000} /></label></section>
 
         {errors.length > 0 && <div className="card-outline border-destructive/60 p-4" role="alert"><p className="text-sm font-semibold text-destructive">Quase lá! Verifique os campos abaixo:</p><ul className="mt-1 list-inside list-disc text-sm text-destructive/90">{errors.map((err) => <li key={err}>{err}</li>)}</ul></div>}
 
