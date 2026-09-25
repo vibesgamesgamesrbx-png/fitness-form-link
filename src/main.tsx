@@ -1,9 +1,5 @@
 import { createRoot } from "react-dom/client";
-import { RouterProvider } from "@tanstack/react-router";
-import { getRouter } from "./router";
+import { Index } from "./routes/index";
+import "./styles.css";
 
-const router = getRouter();
-
-createRoot(document.getElementById("root")!).render(
-  <RouterProvider router={router} />,
-);
+createRoot(document.getElementById("root")!).render(<Index />);
