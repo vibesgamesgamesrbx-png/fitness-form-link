@@ -1,4 +1,3 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import {
   Heart,
@@ -12,20 +11,6 @@ import {
   Send,
 } from "lucide-react";
 import { gerarImagemFicha, type FichaSecao } from "@/lib/fichaImagem";
-
-export const Route = createFileRoute("/")({
-  component: Index,
-  head: () => ({
-    meta: [
-      { title: "Juliana Truglia — Ficha de Anamnese | Personal Trainer Feminino" },
-      { name: "description", content: "Preencha sua ficha de anamnese online e envie pelo WhatsApp para a Personal Trainer Juliana Truglia. Mais força para a sua melhor versão!" },
-      { property: "og:title", content: "Juliana Truglia — Ficha de Anamnese" },
-      { property: "og:description", content: "Preencha sua ficha de anamnese online e envie pelo WhatsApp. Personal Trainer Feminino." },
-      { property: "og:type", content: "website" },
-    ],
-  }),
-});
-
 
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2020;
@@ -62,7 +47,7 @@ function maskPhone(value: string) {
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
-function Index() {
+export function Index() {
   // Apenas os controles que mudam a estrutura da tela ficam em React state.
   // Campos de texto são nativos e lidos com FormData no envio, evitando renderização a cada tecla.
   const [nascimento, setNascimento] = useState("");
