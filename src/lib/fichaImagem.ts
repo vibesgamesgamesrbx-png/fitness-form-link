@@ -23,7 +23,7 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
   return lines;
 }
 
-/** Desenha a ficha preenchida como PNG e salva uma cópia segura no banco para o painel da Juliana. */
+/** Gera a ficha preenchida como PNG localmente no navegador. Nada é salvo em banco. */
 export async function gerarImagemFicha(
   nome: string,
   secoes: FichaSecao[],
